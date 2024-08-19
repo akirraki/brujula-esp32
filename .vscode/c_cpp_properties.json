@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "name": "esp-idf",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:\\Espressif\\frameworks\\esp-idf-v5.2.1\\components/**"
+            ],
+            "browse": {
+                "path": [
+                    "C:\\Espressif\\frameworks\\esp-idf-v5.2.1\\components",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            }
+        }
+    ],
+    "version": 4
+}

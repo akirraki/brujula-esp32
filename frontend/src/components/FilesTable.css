@@ -1,0 +1,68 @@
+.files-table-container {
+    margin: 20px;
+    font-family: Arial, sans-serif;
+    color: #e0e0e0;
+}
+
+.files-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background-color: #2c2c2c;
+}
+
+.files-table th,
+.files-table td {
+    border: 1px solid #444;
+    padding: 12px;
+    text-align: left;
+}
+
+.files-table th {
+    background-color: #383838;
+    font-weight: bold;
+}
+
+.files-table tr:nth-child(even) {
+    background-color: #333;
+}
+
+.files-table tr:hover {
+    background-color: #444;
+}
+
+.btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn-download {
+    background-color: #2e7d32;
+    color: white;
+}
+
+.btn-download:hover {
+    background-color: #3a9d3f;
+}
+
+.btn-delete {
+    background-color: #c62828;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #d32f2f;
+}
+
+.files-table-message {
+    margin: 20px;
+    font-size: 16px;
+}
+
+.files-table-message.error {
+    color: #ef5350;
+}

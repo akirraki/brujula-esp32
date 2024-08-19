@@ -1,0 +1,21 @@
+.footer {
+    margin-top: 20px;
+    text-align: center;
+    background-color: #1c1c1c;
+    padding: 20px;
+    color: #e0e0e0;
+}
+
+.btn-full-clean {
+    background-color: #c62828;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-full-clean:hover {
+    background-color: #d32f2f;
+}

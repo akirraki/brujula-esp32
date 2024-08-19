@@ -1,0 +1,57 @@
+{
+    "C_Cpp.intelliSenseEngine": "Tag Parser"
+    ,
+    "files.associations": {
+        "*.css": "css",
+        "stdio.h": "c",
+        "freertos.h": "c",
+        "esp_log.h": "c",
+        "task.h": "c",
+        "gpio.h": "c",
+        "semphr.h": "c",
+        "esp_lcd_panel_ops.h": "c",
+        "spi_master.h": "c",
+        "ui.h": "c",
+        "lvgl.h": "c",
+        "esp_lcd_ili9341.h": "c",
+        "ili9341-lvgl-solution.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "span": "c",
+        "cstdint": "c",
+        "complex": "c",
+        "format": "c",
+        "esp_err.h": "c",
+        "iot_button.h": "c",
+        "cstdlib": "c",
+        "math.h": "c",
+        "random": "c",
+        "stat.h": "c",
+        "chrono": "c",
+        "nmea_parser.h": "c"
+    },
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell"
+        },
+        "Command Prompt": {
+            "path": [
+                "${env:windir}\\Sysnative\\cmd.exe",
+                "${env:windir}\\System32\\cmd.exe"
+            ],
+            "args": [
+                "/k",
+                "C:/Espressif/idf_cmd_init.bat esp-idf-95fc7f73a381402d241e04a22ce81be3"
+            ],
+            "icon": "terminal-cmd"
+        },
+        "Git Bash": {
+            "source": "Git Bash"
+        }
+    },
+    "C_Cpp.default.compilerPath": "C:\\Espressif\\tools\\xtensa-esp-elf\\esp-13.2.0_20230928\\xtensa-esp-elf\\bin\\xtensa-esp32-elf-gcc.exe"
+
+}
