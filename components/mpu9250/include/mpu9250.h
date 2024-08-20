@@ -10,7 +10,8 @@
 
 #define MPU9250_TASK_PRIORITY 2
 #define MPU_TASK_SIZE 4 * 1024
-#define MPU9250_DATA_QUEUE_SIZE 256
+#define MPU9250_DATA_QUEUE_SIZE 128
+#define MPU9250_TICK_PERIOD_MS 250
 
 #define SDA_PIN 21
 #define SCL_PIN 22
@@ -30,3 +31,4 @@ esp_err_t mpu9250_init(void);
 
 extern QueueHandle_t xMPU9250Queue;
 extern TaskHandle_t xMPU9250ProcessingTaskHandle;
+extern QueueHandle_t xDisplayQueueA;

@@ -4,6 +4,7 @@
 #include "esp_log.h"
 #include <math.h>
 #include "mpu9250.h"
+#include "moving_average.h"
 
 QueueHandle_t xMPU9250Queue = NULL;
 TaskHandle_t xMPU9250ProcessingTaskHandle = NULL;
@@ -39,27 +40,13 @@ static float A[3][3] = {{2.570416, 0.134024, -0.054982}, {0.134024, 2.777057, 0.
 static float B[3] = {-6.243407, 36.634592, 15.059727};                                                                     // Corrección de hierro duro
 //-----------------------------------------------------------------------------------------------------------------
 
-static float KalmanAngleRoll = 0, KalmanUncertaintyAngleRoll = 2 * 2;
-static float KalmanAnglePitch = 0, KalmanUncertaintyAnglePitch = 2 * 2;
-static float Kalman1DOutput[] = {0, 0};
-
-void kalman_1d(float KalmanState, float KalmanUncertainty, float KalmanInput, float KalmanMeasurement)
-{
-    KalmanState = KalmanState + 0.004 * KalmanInput;
-    KalmanUncertainty = KalmanUncertainty + 0.004 * 0.004 * 4 * 4;
-    float KalmanGain = KalmanUncertainty * 1 / (1 * KalmanUncertainty + 3 * 3);
-    KalmanState = KalmanState + KalmanGain * (KalmanMeasurement - KalmanState);
-    KalmanUncertainty = (1 - KalmanGain) * KalmanUncertainty;
-    Kalman1DOutput[0] = KalmanState;
-    Kalman1DOutput[1] = KalmanUncertainty;
-}
 static const i2c_port_t i2c_master_port = 0;
 
 static void MPU_medidas(void)
 {
     // Extraigo medidas del giroscopio
-    i2c_master_write_read_device(i2c_master_port, GYRO_ADDR, &lectura_giro, 1, giro_buffer, buf_size, pdMS_TO_TICKS(100));
-    // ESP_LOG_BUFFER_HEX(TAG, giro_buffer, buf_size);         //Muestra las medidas crudas del giroscopio
+    i2c_master_write_read_device(i2c_master_port, GYRO_ADDR, &lectura_giro, 1, giro_buffer, buf_size, pdMS_TO_TICKS(60));
+
     int16_t GyroX = giro_buffer[0] << 8 | giro_buffer[1];
     int16_t GyroY = giro_buffer[2] << 8 | giro_buffer[3];
     int16_t GyroZ = giro_buffer[4] << 8 | giro_buffer[5];
@@ -67,11 +54,9 @@ static void MPU_medidas(void)
     RateRoll = -(float)GyroX / 65.5;
     RatePitch = (float)GyroY / 65.5;
     RateYaw = (float)GyroZ / 65.5;
-    // ESP_LOGI(TAG, "RateRoll: %.2f   RatePitch: %.2f    RateYaw: %.2f", RateRoll, RatePitch, RateYaw);
 
     // Extraigo medidas del acelerometro
-    i2c_master_write_read_device(i2c_master_port, GYRO_ADDR, &lectura_acel, 1, acel_buffer, buf_size, pdMS_TO_TICKS(100));
-    // ESP_LOG_BUFFER_HEX(TAG, acel_buffer, buf_size);         //Muestra las medidas crudas del acelerometro
+    i2c_master_write_read_device(i2c_master_port, GYRO_ADDR, &lectura_acel, 1, acel_buffer, buf_size, pdMS_TO_TICKS(60));
     int16_t AccXLSB = acel_buffer[0] << 8 | acel_buffer[1];
     int16_t AccYLSB = acel_buffer[2] << 8 | acel_buffer[3];
     int16_t AccZLSB = acel_buffer[4] << 8 | acel_buffer[5];
@@ -79,11 +64,9 @@ static void MPU_medidas(void)
     AccX = (float)AccXLSB / 4096;
     AccY = (float)AccYLSB / 4096;
     AccZ = -(float)AccZLSB / 4096;
-    // ESP_LOGI(TAG, "AccX: %.2f   AccY: %.2f    AccZ: %.2f", AccX, AccY, AccZ);
 
     // Extraigo medidas del magnetómetro
-    i2c_master_write_read_device(i2c_master_port, MAG_ADDR, &lectura_mag, 1, mag_buffer, 8, pdMS_TO_TICKS(100));
-    // ESP_LOG_BUFFER_HEX(TAG, mag_buffer, 8);               //Muestra las medidas crudas del magnetómetro
+    i2c_master_write_read_device(i2c_master_port, MAG_ADDR, &lectura_mag, 1, mag_buffer, 8, pdMS_TO_TICKS(125));
     if (mag_buffer[0] & 0x01)
     {
         int16_t Xraw = mag_buffer[2] << 8 | mag_buffer[1];
@@ -94,8 +77,6 @@ static void MPU_medidas(void)
         RateMagY = (float)Yraw / 6.67;
         RateMagZ = (float)Zraw / 6.67;
     }
-    // ESP_LOGI(TAG, "%.2f\t%.2f\t%.2f", RateMagX, RateMagY, RateMagZ); // Esta linea me sirve para extraer las medidas crudas
-    //-----------------------------------------------------------------------------------------------------------------
     RateCalibrationMagX = RateMagX - B[0];
     RateCalibrationMagY = RateMagY - B[1];
     RateCalibrationMagZ = RateMagZ - B[2];
@@ -103,8 +84,6 @@ static void MPU_medidas(void)
     MagX = A[0][0] * RateCalibrationMagX + A[0][1] * RateCalibrationMagY + A[0][2] * RateCalibrationMagZ;
     MagY = A[1][0] * RateCalibrationMagX + A[1][1] * RateCalibrationMagY + A[1][2] * RateCalibrationMagZ;
     MagZ = A[2][0] * RateCalibrationMagX + A[2][1] * RateCalibrationMagY + A[2][2] * RateCalibrationMagZ;
-    // ESP_LOGI(TAG, "MagX: %.2f   MagY: %.2f    MagZ: %.2f", MagX, MagY, MagZ);
-    //-----------------------------------------------------------------------------------------------------------------
 }
 
 static void Calibracion(void)
@@ -125,27 +104,27 @@ static void Calibracion(void)
     RateCalibrationRoll /= promedio;
     RateCalibrationPitch /= promedio;
     RateCalibrationYaw /= promedio;
-    // ESP_LOGI(TAG, "RateRoll: %.2f   RatePitch: %.2f    RateYaw: %.2f", RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw);
-    // Roll rate [°/s]= 0.02 Pitch Rate [°/s]= -0.95 Yaw Rate [°/s]= 0.13        (Dio en el arduino)
-    // RateRoll: -0.04   RatePitch: -0.89    RateYaw: 0.15       (Dio en el espidf)
-
     RateCalibrationAccX /= promedio;
     RateCalibrationAccY /= promedio;
     RateCalibrationAccZ = (RateCalibrationAccZ / promedio) - 1;
-    // ESP_LOGI(TAG, "AccX: %.2f   AccY: %.2f    AccZ: %.2f", RateCalibrationAccX, RateCalibrationAccY, RateCalibrationAccZ);
-    // AccX =   -0.01    AccY = -0.00    AccZ = 0.37         (Dio en arduino)
-    // AccX: -0.01   AccY: -0.00    AccZ: 0.37       (Dio en el espidf)
 }
 
-static void xMPU9250ProcessingTask(void *arg)
+void xMPU9250ProcessingTask(void *arg)
 {
     mpu9250_data_t datos = {
         .nivel = 0.00f,
         .buzamiento = 0.00f,
         .dir_buzamiento = 0.00f,
     };
+    FilterTypeDef Nivel_Filter;
+    FilterTypeDef Buzamiento_Filter;
+    FilterTypeDef Dir_Buzamiento_Filter;
+    Moving_Average_Init(&Nivel_Filter);
+    Moving_Average_Init(&Buzamiento_Filter);
+    Moving_Average_Init(&Dir_Buzamiento_Filter);
+    uint32_t notified_value = 0U;
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(500); // 4ms period? 1s Period
+    const TickType_t xFrequency = pdMS_TO_TICKS(125);
     for (;;)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
@@ -164,8 +143,6 @@ static void xMPU9250ProcessingTask(void *arg)
         {
             Brujula = 360 + Brujula;
         }
-        ESP_LOGI(TAG, "MagX: %.2f   MagY: %.2f    MagZ: %.2f    Brújula: %.2f", MagX, MagY, MagZ, Brujula);
-        //-----------------------------------------------------------------------------------------------------------------
 
         RateRoll -= RateCalibrationRoll;
         RatePitch -= RateCalibrationPitch;
@@ -175,26 +152,17 @@ static void xMPU9250ProcessingTask(void *arg)
         AccY -= RateCalibrationAccY;
         AccZ -= RateCalibrationAccZ;
 
-        // ESP_LOGI(TAG, "RateRoll: %.2f   RatePitch: %.2f    RateYaw: %.2f    AccX: %.2f   AccY: %.2f    AccZ: %.2f",
-        // RateRoll, RatePitch, RateYaw, AccX, AccY, AccZ);
-
         // Calculo e imprimo los angulos que forman con respecto al eje Z
         AngleRoll = atan(AccY / sqrt(AccX * AccX + AccZ * AccZ)) * 1 / (M_PI / 180);  // buzamiento
         AnglePitch = atan(AccX / sqrt(AccY * AccY + AccZ * AccZ)) * 1 / (M_PI / 180); // nivel
 
-        // Aplico filtro Kalman
-        kalman_1d(KalmanAngleRoll, KalmanUncertaintyAngleRoll, RateRoll, AngleRoll);
-        KalmanAngleRoll = Kalman1DOutput[0];
-        KalmanUncertaintyAngleRoll = Kalman1DOutput[1];
-        kalman_1d(KalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch);
-        KalmanAnglePitch = Kalman1DOutput[0];
-        KalmanUncertaintyAnglePitch = Kalman1DOutput[1];
-
         // Send MPU data
-        datos.dir_buzamiento = Brujula;
-        datos.buzamiento = KalmanAngleRoll;
-        datos.nivel = KalmanAnglePitch;
-        xQueueSendToBack(xMPU9250Queue, &datos, 0);
+        datos.dir_buzamiento = Moving_Average_Compute(Brujula, &Dir_Buzamiento_Filter);
+        datos.buzamiento = Moving_Average_Compute(AngleRoll, &Buzamiento_Filter);
+        datos.nivel = Moving_Average_Compute(AnglePitch, &Nivel_Filter);
+        xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, pdMS_TO_TICKS(5));
+        if ((notified_value & 0x03) != 0)
+            xQueueSendToFront(xDisplayQueueA, &datos, pdMS_TO_TICKS(5));
         taskYIELD();
     }
 }
@@ -224,7 +192,7 @@ esp_err_t mpu9250_init(void)
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, sensibilidad_giro, 2, pdMS_TO_TICKS(100));
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, sensibilidad_acel, 2, pdMS_TO_TICKS(100));
 
-    // Calibracion();
+    Calibracion();
     //  Inicio del magnetometro
     //  https://www.luisllamas.es/usar-arduino-con-los-imu-de-9dof-mpu-9150-y-mpu-9250/
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, yoquese, 2, pdMS_TO_TICKS(100));

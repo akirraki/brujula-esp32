@@ -47,10 +47,10 @@ static void keyboard_read(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
         switch (act_key)
         {
         case ARRIBA:
-            act_key = LV_KEY_NEXT;
+            act_key = LV_KEY_PREV;
             break;
         case ABAJO:
-            act_key = LV_KEY_PREV;
+            act_key = LV_KEY_NEXT;
             break;
         case ENTER:
             act_key = LV_KEY_ENTER;
@@ -89,6 +89,12 @@ static void initialise_mdns(void)
 // wifi
 void wifi_init_softap(void); // defined inside wifi_ap.c
 
+// display
+QueueHandle_t xDisplayQueueA = NULL;
+QueueHandle_t xDisplayQueueB = NULL;
+TaskHandle_t xDispMeasurementsTaskHandle = NULL;
+void xDispMeasurementsTask(void *pvParameter);
+
 // gps
 #define GPS_TASK_SIZE 1024 * 4
 #define GPS_TASK_PRIORITY 2
@@ -96,12 +102,6 @@ void gps_event_handler(void *event_handler_arg, esp_event_base_t event_base, int
 QueueHandle_t xGPSDataQueue = NULL;
 void xGPSTask(void *pvParameter);
 TaskHandle_t xGPSTaskHandle = NULL;
-
-// gyro+magneto
-#define GYROMAGNETO_TASK_SIZE 1024 * 4
-#define GYROMAGNETO_TASK_PRIORITY 2
-void xGyroMagnetoTask(void *pvParameter);
-TaskHandle_t xGyroMagnetoTaskHandle = NULL;
 
 static const char *TAG = "protoMedidas";
 
@@ -135,14 +135,6 @@ void app_main(void)
         .format_if_mount_failed = true};
     ESP_ERROR_CHECK(spiffs_init(&csv_conf));
 
-    vTaskDelay(pdMS_TO_TICKS(50));
-    xKeypadQueue = xQueueCreate(10, sizeof(uint32_t));
-    xTaskCreate(xSwitchScreenTask,
-                "screensTask",
-                1024,
-                NULL,
-                2,
-                &xSwTaskHandle);
     lv_disp_t *my_diplay = setup_display();
     if (lvgl_lock(-1))
     {
@@ -170,6 +162,14 @@ void app_main(void)
     lv_group_add_obj(my_group, ui_Borrar_medidas);
     lv_indev_set_group(my_indev, my_group);
 
+    xKeypadQueue = xQueueCreate(10, sizeof(uint32_t));
+    xTaskCreate(xSwitchScreenTask,
+                "screensTask",
+                1024,
+                NULL,
+                2,
+                &xSwTaskHandle);
+
     // Initialize mDNS
     initialise_mdns();
 
@@ -196,17 +196,20 @@ void app_main(void)
 
     // mpu init
     mpu9250_init();
+    // display task
+    xDisplayQueueA = xQueueCreate(16, sizeof(mpu9250_data_t));
+    xDisplayQueueB = xQueueCreate(16, sizeof(gps_t));
     xTaskCreate(
-        xGyroMagnetoTask,
-        "gyro_magneto",
-        GYROMAGNETO_TASK_SIZE,
+        xDispMeasurementsTask,
+        "disp_measurements",
+        1024 * 2,
         NULL,
-        GYROMAGNETO_TASK_PRIORITY,
-        &xGyroMagnetoTaskHandle);
+        2,
+        &xDispMeasurementsTaskHandle);
 
     while (1)
     {
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(1));
     }
 }
 

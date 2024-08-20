@@ -1,8 +1,8 @@
 idf_component_register(SRCS "brujula.c"
-                            "gyro_magneto.c"
                             "gps.c"
                             "rest_server.c"
                             "wifi_ap.c"
+                            "display_measurements.c"
                     INCLUDE_DIRS ".")
 
 # Define the directory where your web files are located

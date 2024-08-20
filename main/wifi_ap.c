@@ -98,3 +98,8 @@ void wifi_init_softap(void)
     ESP_LOGI(TAG, "wifi_init_softap finished. SSID:%s password:%s channel:%d",
              CONFIG_ESP_WIFI_SSID, CONFIG_ESP_WIFI_PASSWORD, CONFIG_ESP_WIFI_CHANNEL);
 }
+
+void wifi_stop_softap(void)
+{
+    ESP_ERROR_CHECK(esp_wifi_stop());
+}
