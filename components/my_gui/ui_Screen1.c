@@ -104,7 +104,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_Norte, -105);
     lv_obj_set_align(ui_Norte, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Norte, "N =");
-    lv_obj_set_style_text_font(ui_Norte, &lv_font_montserrat_18, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Norte, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Norte1 = lv_label_create(ui_Screen1);
     lv_obj_set_width(ui_Norte1, LV_SIZE_CONTENT);   /// 1
@@ -113,7 +113,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_Norte1, -105);
     lv_obj_set_align(ui_Norte1, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Norte1, "0°");
-    lv_obj_set_style_text_font(ui_Norte1, &lv_font_montserrat_18, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Norte1, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Sur = lv_label_create(ui_Screen1);
     lv_obj_set_width(ui_Sur, LV_SIZE_CONTENT);   /// 1
@@ -122,7 +122,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_Sur, 70);
     lv_obj_set_align(ui_Sur, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Sur, "S");
-    lv_obj_set_style_text_font(ui_Sur, &lv_font_montserrat_18, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Sur, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Oeste = lv_label_create(ui_Screen1);
     lv_obj_set_width(ui_Oeste, LV_SIZE_CONTENT);   /// 1
@@ -131,7 +131,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_Oeste, -17);
     lv_obj_set_align(ui_Oeste, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Oeste, "O");
-    lv_obj_set_style_text_font(ui_Oeste, &lv_font_montserrat_18, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Oeste, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_Este = lv_label_create(ui_Screen1);
     lv_obj_set_width(ui_Este, LV_SIZE_CONTENT);   /// 1
@@ -140,7 +140,7 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_Este, -16);
     lv_obj_set_align(ui_Este, LV_ALIGN_CENTER);
     lv_label_set_text(ui_Este, "E");
-    lv_obj_set_style_text_font(ui_Este, &lv_font_montserrat_18, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_Este, &lv_font_montserrat_20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_De1a2 = lv_obj_create(ui_Screen1);
     lv_obj_set_width(ui_De1a2, lv_pct(10));

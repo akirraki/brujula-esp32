@@ -116,8 +116,6 @@ extern lv_obj_t * ui_Screen5;
 extern lv_obj_t * ui_Wifi3;
 extern lv_obj_t * ui_Wifi4;
 extern lv_obj_t * ui_Wifi5;
-extern lv_obj_t * ui_Calibrar2;
-extern lv_obj_t * ui_Calibrar3;
 extern lv_obj_t * ui_Borrar_medidas2;
 extern lv_obj_t * ui_Borrar_medidas3;
 extern lv_obj_t * ui_Calibrando;
@@ -131,8 +129,6 @@ extern lv_obj_t * ui_Screen6;
 extern lv_obj_t * ui_Wifi6;
 extern lv_obj_t * ui_Wifi7;
 extern lv_obj_t * ui_Wifi8;
-extern lv_obj_t * ui_Calibrar4;
-extern lv_obj_t * ui_Calibrar5;
 extern lv_obj_t * ui_Borrar_medidas4;
 extern lv_obj_t * ui_Borrar_medidas5;
 extern lv_obj_t * ui_Borrando;
@@ -140,6 +136,19 @@ extern lv_obj_t * ui_Borrando1;
 extern lv_obj_t * ui_Borrando2;
 void ui_event_Salir2(lv_event_t * e);
 extern lv_obj_t * ui_Salir2;
+// SCREEN: ui_Screen7
+void ui_Screen7_screen_init(void);
+extern lv_obj_t * ui_Screen7;
+extern lv_obj_t * ui_Wifi9;
+extern lv_obj_t * ui_Wifi10;
+extern lv_obj_t * ui_Wifi11;
+extern lv_obj_t * ui_Borrar_medidas6;
+extern lv_obj_t * ui_Borrar_medidas7;
+extern lv_obj_t * ui_Reseteando;
+extern lv_obj_t * ui_Reseteando1;
+extern lv_obj_t * ui_Reseteando2;
+void ui_event_Salir3(lv_event_t * e);
+extern lv_obj_t * ui_Salir3;
 extern lv_obj_t * ui____initial_actions0;
 
 

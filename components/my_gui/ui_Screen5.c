@@ -36,18 +36,6 @@ void ui_Screen5_screen_init(void)
     lv_obj_set_align(ui_Wifi5, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_Wifi5, "ON");
 
-    ui_Calibrar2 = lv_obj_create(ui_Screen5);
-    lv_obj_set_width(ui_Calibrar2, 150);
-    lv_obj_set_height(ui_Calibrar2, 50);
-    lv_obj_set_align(ui_Calibrar2, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Calibrar2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-
-    ui_Calibrar3 = lv_label_create(ui_Calibrar2);
-    lv_obj_set_width(ui_Calibrar3, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Calibrar3, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_Calibrar3, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Calibrar3, "Calibrar");
-
     ui_Borrar_medidas2 = lv_obj_create(ui_Screen5);
     lv_obj_set_width(ui_Borrar_medidas2, 150);
     lv_obj_set_height(ui_Borrar_medidas2, 50);

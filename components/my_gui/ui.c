@@ -108,8 +108,6 @@ lv_obj_t * ui_Screen5;
 lv_obj_t * ui_Wifi3;
 lv_obj_t * ui_Wifi4;
 lv_obj_t * ui_Wifi5;
-lv_obj_t * ui_Calibrar2;
-lv_obj_t * ui_Calibrar3;
 lv_obj_t * ui_Borrar_medidas2;
 lv_obj_t * ui_Borrar_medidas3;
 lv_obj_t * ui_Calibrando;
@@ -125,8 +123,6 @@ lv_obj_t * ui_Screen6;
 lv_obj_t * ui_Wifi6;
 lv_obj_t * ui_Wifi7;
 lv_obj_t * ui_Wifi8;
-lv_obj_t * ui_Calibrar4;
-lv_obj_t * ui_Calibrar5;
 lv_obj_t * ui_Borrar_medidas4;
 lv_obj_t * ui_Borrar_medidas5;
 lv_obj_t * ui_Borrando;
@@ -134,6 +130,21 @@ lv_obj_t * ui_Borrando1;
 lv_obj_t * ui_Borrando2;
 void ui_event_Salir2(lv_event_t * e);
 lv_obj_t * ui_Salir2;
+
+
+// SCREEN: ui_Screen7
+void ui_Screen7_screen_init(void);
+lv_obj_t * ui_Screen7;
+lv_obj_t * ui_Wifi9;
+lv_obj_t * ui_Wifi10;
+lv_obj_t * ui_Wifi11;
+lv_obj_t * ui_Borrar_medidas6;
+lv_obj_t * ui_Borrar_medidas7;
+lv_obj_t * ui_Reseteando;
+lv_obj_t * ui_Reseteando1;
+lv_obj_t * ui_Reseteando2;
+void ui_event_Salir3(lv_event_t * e);
+lv_obj_t * ui_Salir3;
 lv_obj_t * ui____initial_actions0;
 const lv_img_dsc_t * ui_imgset_pngwing_com[1] = {&ui_img_pngwing2_com_png};
 
@@ -260,6 +271,14 @@ void ui_event_Salir2(lv_event_t * e)
         _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_FADE_ON, 100, 0, &ui_Screen3_screen_init);
     }
 }
+void ui_event_Salir3(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_FADE_ON, 100, 0, &ui_Screen3_screen_init);
+    }
+}
 
 ///////////////////// SCREENS ////////////////////
 
@@ -275,6 +294,7 @@ void ui_init(void)
     ui_Screen4_screen_init();
     ui_Screen5_screen_init();
     ui_Screen6_screen_init();
+    ui_Screen7_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_Screen1);
 }
