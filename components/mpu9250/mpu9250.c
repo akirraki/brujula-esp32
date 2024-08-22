@@ -123,11 +123,8 @@ void xMPU9250ProcessingTask(void *arg)
     Moving_Average_Init(&Buzamiento_Filter);
     Moving_Average_Init(&Dir_Buzamiento_Filter);
     uint32_t notified_value = 0U;
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(125);
     for (;;)
     {
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
         MPU_medidas();
 
         //-----------------------------------------------------------------------------------------------------------------
@@ -160,9 +157,9 @@ void xMPU9250ProcessingTask(void *arg)
         datos.dir_buzamiento = Moving_Average_Compute(Brujula, &Dir_Buzamiento_Filter);
         datos.buzamiento = Moving_Average_Compute(AngleRoll, &Buzamiento_Filter);
         datos.nivel = Moving_Average_Compute(AnglePitch, &Nivel_Filter);
-        xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, pdMS_TO_TICKS(5));
+        xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, portMAX_DELAY);
         if ((notified_value & 0x03) != 0)
-            xQueueSendToFront(xDisplayQueueA, &datos, pdMS_TO_TICKS(5));
+            xQueueSendToFront(xDisplayQueueA, &datos, pdMS_TO_TICKS(100));
         taskYIELD();
     }
 }

@@ -95,7 +95,7 @@ void MIDIERON(lv_event_t *e)
 void CALIBRARON(lv_event_t *e)
 {
     Calibracion();
-    lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
+    xTaskNotify(xSwTaskHandle, 0x03, eSetBits);
 }
 void BORRARON(lv_event_t *e)
 {

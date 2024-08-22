@@ -217,9 +217,6 @@ void ui_event_Calibrar(lv_event_t *e)
     if (event_code == LV_EVENT_CLICKED)
     {
         _ui_screen_change(&ui_Screen5, LV_SCR_LOAD_ANIM_NONE, 100, 0, &ui_Screen5_screen_init);
-    }
-    if (event_code == LV_EVENT_CLICKED)
-    {
         CALIBRARON(e);
     }
 }

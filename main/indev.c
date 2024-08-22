@@ -5,10 +5,12 @@
 #include "ili9341-lvgl-solution.h"
 #include "ui.h"
 #include "botonera.h"
+#include "mpu9250.h"
 #include "indev.h"
 
 #define R_FLAG (0x01)
 #define L_FLAG (0x02)
+#define ENTER_FLAG (0x03)
 
 lv_group_t *my_group;
 lv_indev_drv_t indev_drv;
@@ -145,6 +147,14 @@ static void xSwitchScreenTask(void *pvParameter)
                     }
                     default:
                         break;
+                    }
+                }
+
+                if ((notifiedValue & ENTER_FLAG) != 0)
+                {
+                    if (lv_scr_act() == ui_Screen5)
+                    {
+                        lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
                     }
                 }
                 lvgl_unlock();
