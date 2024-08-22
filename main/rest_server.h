@@ -13,4 +13,7 @@ typedef struct rest_server_context
     char scratch[SCRATCH_BUFSIZE];
 } rest_server_context_t;
 
+extern httpd_handle_t server;
+extern rest_server_context_t *rest_context;
+
 httpd_handle_t start_rest_server(const char *web_base_path, const char *csv_base_path, rest_server_context_t **out_rest_context);

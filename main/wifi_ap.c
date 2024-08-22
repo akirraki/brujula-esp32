@@ -11,8 +11,6 @@
 
 #include "rest_server.h"
 
-httpd_handle_t server = NULL;
-rest_server_context_t *rest_context = NULL;
 const char *web_base_path = "/www";
 const char *csv_base_path = "/csvfiles";
 

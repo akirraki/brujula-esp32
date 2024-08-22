@@ -2,6 +2,8 @@ idf_component_register(SRCS "brujula.c"
                             "gps.c"
                             "rest_server.c"
                             "wifi_ap.c"
+                            "indev.c"
+                            "ui_cbs.c"
                             "display_measurements.c"
                     INCLUDE_DIRS ".")
 

@@ -2,16 +2,16 @@
 #include "ili9341-lvgl-solution.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_wifi.h"
 #include "nmea_parser.h"
 #include "mpu9250.h"
-#include "esp_wifi.h"
+#include "wifi_ap.h"
+#include "indev.h"
 
 extern QueueHandle_t xDisplayQueueA;
 extern QueueHandle_t xDisplayQueueB;
 extern TaskHandle_t xDispMeasurementsTaskHandle;
 extern TaskHandle_t xGPSTaskHandle;
-
-extern void wifi_stop_softap(void);
 
 #define YEAR_BASE (2000)
 #define TIME_ZONE (-3) // Buenos Aires
@@ -89,12 +89,13 @@ void WIFION(lv_event_t *e)
         state = 0x01;
     }
 }
-
 void MIDIERON(lv_event_t *e)
 {
 }
 void CALIBRARON(lv_event_t *e)
 {
+    Calibracion();
+    lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
 }
 void BORRARON(lv_event_t *e)
 {

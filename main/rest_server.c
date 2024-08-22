@@ -9,6 +9,9 @@
 #include "esp_log.h"
 #include "cJSON.h"
 
+httpd_handle_t server = NULL;
+rest_server_context_t *rest_context = NULL;
+
 static const char *REST_TAG = "esp-rest";
 #define REST_CHECK(a, str, goto_tag, ...)                                              \
     do                                                                                 \

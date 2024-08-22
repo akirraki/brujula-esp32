@@ -86,7 +86,7 @@ static void MPU_medidas(void)
     MagZ = A[2][0] * RateCalibrationMagX + A[2][1] * RateCalibrationMagY + A[2][2] * RateCalibrationMagZ;
 }
 
-static void Calibracion(void)
+void Calibracion(void)
 {
     for (int i = 0; i < promedio; i++)
     {

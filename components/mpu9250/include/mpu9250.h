@@ -28,6 +28,7 @@ typedef struct mpu9250_data_t
 } mpu9250_data_t;
 
 esp_err_t mpu9250_init(void);
+void Calibracion(void);
 
 extern QueueHandle_t xMPU9250Queue;
 extern TaskHandle_t xMPU9250ProcessingTaskHandle;
