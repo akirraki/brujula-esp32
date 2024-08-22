@@ -4,11 +4,14 @@
 #include "freertos/task.h"
 #include "nmea_parser.h"
 #include "mpu9250.h"
+#include "esp_wifi.h"
 
 extern QueueHandle_t xDisplayQueueA;
 extern QueueHandle_t xDisplayQueueB;
 extern TaskHandle_t xDispMeasurementsTaskHandle;
 extern TaskHandle_t xGPSTaskHandle;
+
+extern void wifi_stop_softap(void);
 
 #define YEAR_BASE (2000)
 #define TIME_ZONE (-3) // Buenos Aires
@@ -69,5 +72,20 @@ void xDispMeasurementsTask(void *pvParameter)
                 }
             }
         }
+    }
+}
+
+void WIFION(lv_event_t *e)
+{
+    static uint8_t state = 0x00; // wifi on: 0x01
+    if (state)
+    {
+        wifi_stop_softap();
+        state = 0x00;
+    }
+    else
+    {
+        ESP_ERROR_CHECK(esp_wifi_start());
+        state = 0x01;
     }
 }
