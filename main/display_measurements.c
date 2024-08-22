@@ -89,3 +89,19 @@ void WIFION(lv_event_t *e)
         state = 0x01;
     }
 }
+
+void MIDIERON(lv_event_t *e)
+{
+}
+void CALIBRARON(lv_event_t *e)
+{
+}
+void BORRARON(lv_event_t *e)
+{
+}
+void NOPOFUNCION(lv_event_t *e)
+{
+}
+void SIPIFUNCION(lv_event_t *e)
+{
+}

@@ -29,7 +29,8 @@
         "random": "c",
         "stat.h": "c",
         "chrono": "c",
-        "nmea_parser.h": "c"
+        "nmea_parser.h": "c",
+        "numbers": "cpp"
     },
     "terminal.integrated.defaultProfile.windows": "Command Prompt",
     "terminal.integrated.profiles.windows": {

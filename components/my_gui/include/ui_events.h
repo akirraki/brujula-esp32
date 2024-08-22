@@ -10,7 +10,12 @@
 extern "C" {
 #endif
 
+void MIDIERON(lv_event_t * e);
 void WIFION(lv_event_t * e);
+void CALIBRARON(lv_event_t * e);
+void BORRARON(lv_event_t * e);
+void NOPOFUNCION(lv_event_t * e);
+void SIPIFUNCION(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

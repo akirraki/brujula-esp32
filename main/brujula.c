@@ -103,6 +103,30 @@ QueueHandle_t xGPSDataQueue = NULL;
 void xGPSTask(void *pvParameter);
 TaskHandle_t xGPSTaskHandle = NULL;
 
+// utilidad - pasar a archivo aparte eventualmente
+
+lv_group_t *my_group;
+
+void toggle_group_visibility(lv_group_t *group, BaseType_t enable)
+{
+    if (enable == pdFALSE)
+    {
+        if (lvgl_lock(-1))
+        {
+            lv_group_focus_freeze(group, true);
+            lvgl_unlock();
+        }
+    }
+    else
+    {
+        if (lvgl_lock(-1))
+        {
+            lv_group_focus_freeze(group, false);
+            lvgl_unlock();
+        }
+    }
+}
+
 static const char *TAG = "protoMedidas";
 
 void app_main(void)
@@ -135,6 +159,14 @@ void app_main(void)
         .format_if_mount_failed = true};
     ESP_ERROR_CHECK(spiffs_init(&csv_conf));
 
+    xKeypadQueue = xQueueCreate(10, sizeof(uint32_t));
+    xTaskCreate(xSwitchScreenTask,
+                "screensTask",
+                1024,
+                NULL,
+                2,
+                &xSwTaskHandle);
+
     lv_disp_t *my_diplay = setup_display();
     if (lvgl_lock(-1))
     {
@@ -156,19 +188,14 @@ void app_main(void)
     indev_drv.read_cb = keyboard_read;
     /*Register the driver in LVGL and save the created input device object*/
     lv_indev_t *my_indev = lv_indev_drv_register(&indev_drv);
-    lv_group_t *my_group = lv_group_create();
+
+    my_group = lv_group_create();
+
     lv_group_add_obj(my_group, ui_Wifi);
     lv_group_add_obj(my_group, ui_Calibrar);
     lv_group_add_obj(my_group, ui_Borrar_medidas);
     lv_indev_set_group(my_indev, my_group);
-
-    xKeypadQueue = xQueueCreate(10, sizeof(uint32_t));
-    xTaskCreate(xSwitchScreenTask,
-                "screensTask",
-                1024,
-                NULL,
-                2,
-                &xSwTaskHandle);
+    toggle_group_visibility(my_group, pdFALSE);
 
     // Initialize mDNS
     initialise_mdns();
@@ -241,12 +268,14 @@ static void xSwitchScreenTask(void *pvParameter)
                     case screen2:
                     {
                         screenContext = screen3;
+                        toggle_group_visibility(my_group, pdTRUE);
                         lv_event_send(ui_De2a3, LV_EVENT_CLICKED, NULL);
                         break;
                     }
                     case screen3:
                     {
                         screenContext = screen1;
+                        toggle_group_visibility(my_group, pdFALSE);
                         lv_event_send(ui_De3a1, LV_EVENT_CLICKED, NULL);
                         break;
                     }
@@ -262,6 +291,7 @@ static void xSwitchScreenTask(void *pvParameter)
                     case screen1:
                     {
                         screenContext = screen3;
+                        toggle_group_visibility(my_group, pdTRUE);
                         lv_event_send(ui_De1a3, LV_EVENT_CLICKED, NULL);
                         break;
                     }
@@ -274,6 +304,7 @@ static void xSwitchScreenTask(void *pvParameter)
                     case screen3:
                     {
                         screenContext = screen2;
+                        toggle_group_visibility(my_group, pdFALSE);
                         lv_event_send(ui_De3a2, LV_EVENT_CLICKED, NULL);
                         break;
                     }
