@@ -3,10 +3,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_wifi.h"
+#include "esp_log.h"
 #include "nmea_parser.h"
 #include "mpu9250.h"
 #include "wifi_ap.h"
 #include "indev.h"
+#include <stdio.h>
+#include "dirent.h"
 
 extern QueueHandle_t xDisplayQueueA;
 extern QueueHandle_t xDisplayQueueB;
@@ -91,6 +94,9 @@ void WIFION(lv_event_t *e)
 }
 void MIDIERON(lv_event_t *e)
 {
+    lv_group_remove_all_objs(my_group);
+    lv_group_add_obj(my_group, ui_SIPI);
+    lv_group_add_obj(my_group, ui_NOPO);
 }
 void CALIBRARON(lv_event_t *e)
 {
@@ -102,7 +108,67 @@ void BORRARON(lv_event_t *e)
 }
 void NOPOFUNCION(lv_event_t *e)
 {
+    lv_group_remove_all_objs(my_group);
+    lv_group_add_obj(my_group, ui_Medir);
 }
 void SIPIFUNCION(lv_event_t *e)
 {
+    xTaskNotify(xMPU9250ProcessingTaskHandle, 0x03, eSetBits);
+    lv_group_remove_all_objs(my_group);
+    lv_group_add_obj(my_group, ui_Medir);
+}
+
+void xStoreFileTask(void *pvParameter)
+{
+    gps_t gpsData;
+    mpu9250_data_t brujulaData;
+    BaseType_t xStatus = pdFALSE;
+    static int file_count = 0;
+    const char *csv_filepath = "/csvfiles";
+    const char *brujula_header = "Nivel, Buzamiento, DB\n";
+    const char *gps_header = "Fecha, Hora, Latitud, Longitud, Altitud\n";
+    char filepath[80] = {};
+    char buffer[80] = {};
+    for (;;)
+    {
+        xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, portMAX_DELAY);
+        if (xStatus == pdTRUE)
+        {
+            DIR *dirp;
+            struct dirent *entry;
+
+            dirp = opendir(csv_filepath);
+            if (dirp == NULL)
+            {
+                taskYIELD();
+            }
+            while ((entry = readdir(dirp)) != NULL)
+            {
+                if (entry->d_type == DT_REG)
+                { /* If the entry is a regular file */
+                    file_count++;
+                }
+            }
+            closedir(dirp);
+            // write data to.csv file
+            snprintf(filepath, sizeof(filepath), "%s/brujula_data%d.csv", csv_filepath, file_count);
+
+            FILE *file = fopen(filepath, "a");
+            if (file == NULL)
+            {
+                taskYIELD();
+            }
+
+            // if file is empty (new file), write header
+            if (ftell(file) == 0)
+            {
+                fputs(brujula_header, file);
+            }
+
+            fprintf(file, "%.05f, %.05f, %.05f\n", brujulaData.nivel, brujulaData.buzamiento, brujulaData.dir_buzamiento);
+            fclose(file);
+            file_count = 0;
+            taskYIELD();
+        }
+    }
 }

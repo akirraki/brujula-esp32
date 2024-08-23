@@ -54,6 +54,10 @@ QueueHandle_t xGPSDataQueue = NULL;
 void xGPSTask(void *pvParameter);
 TaskHandle_t xGPSTaskHandle = NULL;
 
+// storage
+TaskHandle_t xStoreFileTaskHandle = NULL;
+void xStoreFileTask(void *pvParameter);
+
 void app_main(void)
 {
     // Initialize NVS
@@ -130,7 +134,14 @@ void app_main(void)
         NULL,
         2,
         &xDispMeasurementsTaskHandle);
-
+    // storage tasks
+    xTaskCreate(
+        xStoreFileTask,
+        "store_a_file",
+        1024 * 2,
+        NULL,
+        2,
+        &xStoreFileTaskHandle);
     while (1)
     {
         vTaskDelay(pdMS_TO_TICKS(1));
