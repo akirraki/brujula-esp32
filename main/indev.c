@@ -149,14 +149,6 @@ static void xSwitchScreenTask(void *pvParameter)
                         break;
                     }
                 }
-
-                if ((notifiedValue & ENTER_FLAG) != 0)
-                {
-                    if (lv_scr_act() == ui_Screen5)
-                    {
-                        lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
-                    }
-                }
                 lvgl_unlock();
             }
         }

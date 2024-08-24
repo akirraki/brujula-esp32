@@ -15,6 +15,7 @@ extern QueueHandle_t xDisplayQueueA;
 extern QueueHandle_t xDisplayQueueB;
 extern TaskHandle_t xDispMeasurementsTaskHandle;
 extern TaskHandle_t xGPSTaskHandle;
+extern TaskHandle_t xStoreFileTaskHandle;
 
 #define YEAR_BASE (2000)
 #define TIME_ZONE (-3) // Buenos Aires
@@ -100,8 +101,10 @@ void MIDIERON(lv_event_t *e)
 }
 void CALIBRARON(lv_event_t *e)
 {
+    lv_group_remove_all_objs(my_group);
+    lv_group_add_obj(my_group, ui_Salir1);
     Calibracion();
-    xTaskNotify(xSwTaskHandle, 0x03, eSetBits);
+    lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
 }
 void BORRARON(lv_event_t *e)
 {
@@ -113,7 +116,7 @@ void NOPOFUNCION(lv_event_t *e)
 }
 void SIPIFUNCION(lv_event_t *e)
 {
-    xTaskNotify(xMPU9250ProcessingTaskHandle, 0x03, eSetBits);
+    xTaskNotify(xStoreFileTaskHandle, 0x07, eSetBits);
     lv_group_remove_all_objs(my_group);
     lv_group_add_obj(my_group, ui_Medir);
 }
@@ -121,7 +124,7 @@ void SIPIFUNCION(lv_event_t *e)
 void xStoreFileTask(void *pvParameter)
 {
     gps_t gpsData;
-    mpu9250_data_t brujulaData;
+    mpu9250_data_t brujulaData = {0, 0, 0};
     BaseType_t xStatus = pdFALSE;
     static int file_count = 0;
     const char *csv_filepath = "/csvfiles";
@@ -131,7 +134,8 @@ void xStoreFileTask(void *pvParameter)
     char buffer[80] = {};
     for (;;)
     {
-        xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, portMAX_DELAY);
+        // xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, portMAX_DELAY);
+        xStatus = pdFALSE;
         if (xStatus == pdTRUE)
         {
             DIR *dirp;

@@ -36,8 +36,8 @@ static float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw;
 static float RateCalibrationAccX, RateCalibrationAccY, RateCalibrationAccZ;
 static float RateCalibrationMagX, RateCalibrationMagY, RateCalibrationMagZ;
 //-----------------------------------------------------------------------------------------------------------------
-static float A[3][3] = {{2.570416, 0.134024, -0.054982}, {0.134024, 2.777057, 0.022216}, {-0.054982, 0.114052, 2.843312}}; // Corrección de hierro dulce y desalineación (fila, columna)
-static float B[3] = {-6.243407, 36.634592, 15.059727};                                                                     // Corrección de hierro duro
+static float A[3][3] = {{1.174283, 0.082554, -0.014338}, {0.082554, 1.405411, 0.085421}, {-0.014338, 0.085421, 1.383696}}; // Corrección de hierro dulce y desalineación (fila, columna)
+static float B[3] = {19.633246, 23.913493, 16.036698};                                                                     // Corrección de hierro duro
 //-----------------------------------------------------------------------------------------------------------------
 
 static const i2c_port_t i2c_master_port = 0;
@@ -86,7 +86,7 @@ static void MPU_medidas(void)
     MagZ = A[2][0] * RateCalibrationMagX + A[2][1] * RateCalibrationMagY + A[2][2] * RateCalibrationMagZ;
 }
 
-void Calibracion(void)
+void Calibracion(void) // pasar a tarea mpu o tarea aparte
 {
     for (int i = 0; i < promedio; i++)
     {
@@ -99,7 +99,7 @@ void Calibracion(void)
         RateCalibrationAccY += AccY;
         RateCalibrationAccZ += AccZ;
 
-        vTaskDelay(pdMS_TO_TICKS(1));
+        // vTaskDelay(pdMS_TO_TICKS(1));
     }
     RateCalibrationRoll /= promedio;
     RateCalibrationPitch /= promedio;
@@ -150,8 +150,8 @@ void xMPU9250ProcessingTask(void *arg)
         AccZ -= RateCalibrationAccZ;
 
         // Calculo e imprimo los angulos que forman con respecto al eje Z
-        AngleRoll = atan(AccY / sqrt(AccX * AccX + AccZ * AccZ)) * 1 / (M_PI / 180);  // buzamiento
-        AnglePitch = atan(AccX / sqrt(AccY * AccY + AccZ * AccZ)) * 1 / (M_PI / 180); // nivel
+        AngleRoll = atan(AccY / sqrt(AccX * AccX + AccZ * AccZ)) * 1 / (M_PI / 180);   // buzamiento
+        AnglePitch = -atan(AccX / sqrt(AccY * AccY + AccZ * AccZ)) * 1 / (M_PI / 180); // nivel
 
         // Send MPU data
         datos.dir_buzamiento = Moving_Average_Compute(Brujula, &Dir_Buzamiento_Filter);
