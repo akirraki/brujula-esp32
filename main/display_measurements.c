@@ -16,6 +16,7 @@ extern QueueHandle_t xDisplayQueueB;
 extern TaskHandle_t xDispMeasurementsTaskHandle;
 extern TaskHandle_t xGPSTaskHandle;
 extern TaskHandle_t xStoreFileTaskHandle;
+extern TaskHandle_t xMPU9250CalTaskHandle;
 
 #define YEAR_BASE (2000)
 #define TIME_ZONE (-3) // Buenos Aires
@@ -29,7 +30,7 @@ void xDispMeasurementsTask(void *pvParameter)
     mpu9250_data_t gyroMagnetoData;
     char buf[64];
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(50);
+    const TickType_t xFrequency = pdMS_TO_TICKS(150);
 
     for (;;)
     {
@@ -101,9 +102,7 @@ void MIDIERON(lv_event_t *e)
 }
 void CALIBRARON(lv_event_t *e)
 {
-    lv_group_remove_all_objs(my_group);
-    lv_group_add_obj(my_group, ui_Salir1);
-    Calibracion();
+    xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
     lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
 }
 void BORRARON(lv_event_t *e)

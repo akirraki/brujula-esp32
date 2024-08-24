@@ -6,8 +6,22 @@
 #include "mpu9250.h"
 #include "moving_average.h"
 
+#define MPU9250_TASK_PRIORITY 2
+#define MPU9250CAL_TASK_PRIORITY 2
+#define MPU_TASK_SIZE 2 * 1024
+#define MPU9250_DATA_QUEUE_SIZE 128
+
+#define SDA_PIN 21
+#define SCL_PIN 22
+#define GYRO_ADDR 0x68
+#define MAG_ADDR 0x0C
+#define buf_size 6
+#define promedio 2000
+
 QueueHandle_t xMPU9250Queue = NULL;
 TaskHandle_t xMPU9250ProcessingTaskHandle = NULL;
+TaskHandle_t xMPU9250CalTaskHandle = NULL;
+SemaphoreHandle_t xI2CMutex = NULL;
 
 static const char *TAG = "mpu-9250";
 
@@ -77,6 +91,7 @@ static void MPU_medidas(void)
         RateMagY = (float)Yraw / 6.67;
         RateMagZ = (float)Zraw / 6.67;
     }
+    ESP_LOGI(TAG, "RateMagX:%f, RateMagY:%f, RateMagZ:%f\r\n", RateMagX, RateMagY, RateMagZ);
     RateCalibrationMagX = RateMagX - B[0];
     RateCalibrationMagY = RateMagY - B[1];
     RateCalibrationMagZ = RateMagZ - B[2];
@@ -86,27 +101,37 @@ static void MPU_medidas(void)
     MagZ = A[2][0] * RateCalibrationMagX + A[2][1] * RateCalibrationMagY + A[2][2] * RateCalibrationMagZ;
 }
 
-void Calibracion(void) // pasar a tarea mpu o tarea aparte
+void xMPU9250CalTask(void *pvParameter)
 {
-    for (int i = 0; i < promedio; i++)
+    uint32_t xNotifiedValue = 0x00;
+    for (;;)
     {
-        MPU_medidas();
-        RateCalibrationRoll += RateRoll;
-        RateCalibrationPitch += RatePitch;
-        RateCalibrationYaw += RateYaw;
+        xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
+        if ((xNotifiedValue & CALIBRATE_FLAG) != 0)
+        {
+            if (xSemaphoreTake(xI2CMutex, portMAX_DELAY) == pdPASS)
+            {
+                for (int i = 0; i < promedio; i++)
+                {
+                    MPU_medidas();
+                    RateCalibrationRoll += RateRoll;
+                    RateCalibrationPitch += RatePitch;
+                    RateCalibrationYaw += RateYaw;
 
-        RateCalibrationAccX += AccX;
-        RateCalibrationAccY += AccY;
-        RateCalibrationAccZ += AccZ;
-
-        // vTaskDelay(pdMS_TO_TICKS(1));
+                    RateCalibrationAccX += AccX;
+                    RateCalibrationAccY += AccY;
+                    RateCalibrationAccZ += AccZ;
+                }
+                RateCalibrationRoll /= promedio;
+                RateCalibrationPitch /= promedio;
+                RateCalibrationYaw /= promedio;
+                RateCalibrationAccX /= promedio;
+                RateCalibrationAccY /= promedio;
+                RateCalibrationAccZ = (RateCalibrationAccZ / promedio) - 1;
+                xSemaphoreGive(xI2CMutex);
+            }
+        }
     }
-    RateCalibrationRoll /= promedio;
-    RateCalibrationPitch /= promedio;
-    RateCalibrationYaw /= promedio;
-    RateCalibrationAccX /= promedio;
-    RateCalibrationAccY /= promedio;
-    RateCalibrationAccZ = (RateCalibrationAccZ / promedio) - 1;
 }
 
 void xMPU9250ProcessingTask(void *arg)
@@ -125,7 +150,11 @@ void xMPU9250ProcessingTask(void *arg)
     uint32_t notified_value = 0U;
     for (;;)
     {
-        MPU_medidas();
+        if (xSemaphoreTake(xI2CMutex, portMAX_DELAY) == pdPASS)
+        {
+            MPU_medidas();
+            xSemaphoreGive(xI2CMutex);
+        }
 
         //-----------------------------------------------------------------------------------------------------------------
         // PAGINA DE CALIBRACION https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm
@@ -135,7 +164,7 @@ void xMPU9250ProcessingTask(void *arg)
         // Total field 23.5304 uT
         // plot-calibration-data.py
 
-        Brujula = -atan2(MagX, MagY) * (180.0 / M_PI);
+        Brujula = atan2(MagX, -MagY) * (180.0 / M_PI);
         if (Brujula < 0)
         {
             Brujula = 360 + Brujula;
@@ -158,7 +187,7 @@ void xMPU9250ProcessingTask(void *arg)
         datos.buzamiento = Moving_Average_Compute(AngleRoll, &Buzamiento_Filter);
         datos.nivel = Moving_Average_Compute(AnglePitch, &Nivel_Filter);
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, portMAX_DELAY);
-        if ((notified_value & 0x03) != 0)
+        if ((notified_value & SEND_DATA_FLAG) != 0)
             xQueueSendToFront(xDisplayQueueA, &datos, pdMS_TO_TICKS(100));
         taskYIELD();
     }
@@ -189,7 +218,18 @@ esp_err_t mpu9250_init(void)
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, sensibilidad_giro, 2, pdMS_TO_TICKS(100));
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, sensibilidad_acel, 2, pdMS_TO_TICKS(100));
 
-    Calibracion();
+    xI2CMutex = xSemaphoreCreateMutex();
+    assert(xI2CMutex);
+    BaseType_t err = xTaskCreate(
+        xMPU9250CalTask,
+        "calibracion",
+        MPU_TASK_SIZE,
+        NULL,
+        1,
+        &xMPU9250CalTaskHandle);
+    if (err != pdTRUE)
+        return ESP_FAIL;
+    xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
     //  Inicio del magnetometro
     //  https://www.luisllamas.es/usar-arduino-con-los-imu-de-9dof-mpu-9150-y-mpu-9250/
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, yoquese, 2, pdMS_TO_TICKS(100));
@@ -197,7 +237,7 @@ esp_err_t mpu9250_init(void)
     i2c_master_write_to_device(i2c_master_port, MAG_ADDR, sensibilidad_mag, 2, pdMS_TO_TICKS(100));
 
     xMPU9250Queue = xQueueCreate(MPU9250_DATA_QUEUE_SIZE, sizeof(mpu9250_data_t));
-    BaseType_t err = xTaskCreate(
+    err = xTaskCreate(
         xMPU9250ProcessingTask,
         "mpu_task",
         MPU_TASK_SIZE,
@@ -206,6 +246,5 @@ esp_err_t mpu9250_init(void)
         &xMPU9250ProcessingTaskHandle);
     if (err != pdTRUE)
         return ESP_FAIL;
-
     return ESP_OK;
 }
