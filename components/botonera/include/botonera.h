@@ -11,7 +11,7 @@ typedef enum
 } botonera_id_t;
 
 #define PIN_BOTON_ENTER 27
-#define PIN_BOTON_DER 1
+#define PIN_BOTON_DER 33
 #define PIN_BOTON_IZQ 26
 #define PIN_BOTON_ARRIBA 14
 #define PIN_BOTON_ABAJO 25
