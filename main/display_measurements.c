@@ -30,18 +30,27 @@ void xDispMeasurementsTask(void *pvParameter)
     mpu9250_data_t gyroMagnetoData;
     char buf[64];
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(200);
+    const TickType_t xFrequency = pdMS_TO_TICKS(80);
 
     for (;;)
     {
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        if (finished_cal == 1)
+        {
+            if (lvgl_lock(50))
+            {
+                finished_cal = 0;
+                lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
+                lvgl_unlock();
+            }
+        }
         if (lv_scr_act() == ui_Screen1)
         {
             xTaskNotify(xMPU9250ProcessingTaskHandle, 0x03, eSetBits);
             status = xQueueReceive(xDisplayQueueA, &gyroMagnetoData, pdMS_TO_TICKS(100));
             if (status == pdTRUE)
             {
-                if (lvgl_lock(-1))
+                if (lvgl_lock(100))
                 {
                     lv_slider_set_value(ui_Nivel, gyroMagnetoData.nivel, LV_ANIM_OFF);
                     snprintf(buf, sizeof(buf), " %.01f°", gyroMagnetoData.buzamiento);
@@ -60,7 +69,7 @@ void xDispMeasurementsTask(void *pvParameter)
             status = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(100));
             if (status == pdTRUE)
             {
-                if (lvgl_lock(-1))
+                if (lvgl_lock(100))
                 {
                     snprintf(buf, sizeof(buf), " %.03f°", gpsData.latitude);
                     lv_label_set_text(ui_Label24, buf); // latitud
@@ -103,7 +112,6 @@ void MIDIERON(lv_event_t *e)
 void CALIBRARON(lv_event_t *e)
 {
     xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
-    // lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
 }
 void BORRARON(lv_event_t *e)
 {

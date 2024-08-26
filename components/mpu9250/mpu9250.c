@@ -6,9 +6,9 @@
 #include "mpu9250.h"
 #include "moving_average.h"
 
-#define MPU9250_TASK_PRIORITY 2
+#define MPU9250_TASK_PRIORITY 3
 #define MPU9250CAL_TASK_PRIORITY 2
-#define MPU_TASK_SIZE 2 * 1024
+#define MPU_TASK_SIZE 4 * 1024
 #define MPU9250_DATA_QUEUE_SIZE 128
 
 #define SDA_PIN 21
@@ -22,6 +22,8 @@ QueueHandle_t xMPU9250Queue = NULL;
 TaskHandle_t xMPU9250ProcessingTaskHandle = NULL;
 TaskHandle_t xMPU9250CalTaskHandle = NULL;
 SemaphoreHandle_t xI2CMutex = NULL;
+
+uint8_t finished_cal = 0;
 
 static const char *TAG = "mpu-9250";
 
@@ -91,7 +93,7 @@ static void MPU_medidas(void)
         RateMagY = (float)Yraw / 6.67;
         RateMagZ = (float)Zraw / 6.67;
     }
-    ESP_LOGI(TAG, "RateMagX:%f, RateMagY:%f, RateMagZ:%f\r\n", RateMagX, RateMagY, RateMagZ);
+    // ESP_LOGI(TAG, "RateMagX:%f, RateMagY:%f, RateMagZ:%f\r\n", RateMagX, RateMagY, RateMagZ);
     RateCalibrationMagX = RateMagX - B[0];
     RateCalibrationMagY = RateMagY - B[1];
     RateCalibrationMagZ = RateMagZ - B[2];
@@ -103,7 +105,7 @@ static void MPU_medidas(void)
 
 void xMPU9250CalTask(void *pvParameter)
 {
-    uint32_t xNotifiedValue = 0x00;
+    static uint32_t xNotifiedValue = 0x00;
     for (;;)
     {
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
@@ -128,6 +130,7 @@ void xMPU9250CalTask(void *pvParameter)
                 RateCalibrationAccX /= promedio;
                 RateCalibrationAccY /= promedio;
                 RateCalibrationAccZ = (RateCalibrationAccZ / promedio) - 1;
+                finished_cal = 1;
                 xSemaphoreGive(xI2CMutex);
             }
         }
@@ -232,7 +235,7 @@ esp_err_t mpu9250_init(void)
         "calibracion",
         MPU_TASK_SIZE,
         NULL,
-        3,
+        1,
         &xMPU9250CalTaskHandle);
     if (err != pdTRUE)
         return ESP_FAIL;
