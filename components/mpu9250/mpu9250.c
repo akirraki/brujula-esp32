@@ -217,6 +217,13 @@ esp_err_t mpu9250_init(void)
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, comando_filtro, 2, pdMS_TO_TICKS(100));
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, sensibilidad_giro, 2, pdMS_TO_TICKS(100));
     i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, sensibilidad_acel, 2, pdMS_TO_TICKS(100));
+    //  Inicio del magnetometro
+    //  https://www.luisllamas.es/usar-arduino-con-los-imu-de-9dof-mpu-9150-y-mpu-9250/
+    i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, yoquese, 2, pdMS_TO_TICKS(100));
+    i2c_master_write_to_device(i2c_master_port, MAG_ADDR, powermode_mag, 2, pdMS_TO_TICKS(100));
+    i2c_master_write_to_device(i2c_master_port, MAG_ADDR, sensibilidad_mag, 2, pdMS_TO_TICKS(100));
+
+    xMPU9250Queue = xQueueCreate(MPU9250_DATA_QUEUE_SIZE, sizeof(mpu9250_data_t));
 
     xI2CMutex = xSemaphoreCreateMutex();
     assert(xI2CMutex);
@@ -225,18 +232,10 @@ esp_err_t mpu9250_init(void)
         "calibracion",
         MPU_TASK_SIZE,
         NULL,
-        1,
+        3,
         &xMPU9250CalTaskHandle);
     if (err != pdTRUE)
         return ESP_FAIL;
-    xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
-    //  Inicio del magnetometro
-    //  https://www.luisllamas.es/usar-arduino-con-los-imu-de-9dof-mpu-9150-y-mpu-9250/
-    i2c_master_write_to_device(i2c_master_port, GYRO_ADDR, yoquese, 2, pdMS_TO_TICKS(100));
-    i2c_master_write_to_device(i2c_master_port, MAG_ADDR, powermode_mag, 2, pdMS_TO_TICKS(100));
-    i2c_master_write_to_device(i2c_master_port, MAG_ADDR, sensibilidad_mag, 2, pdMS_TO_TICKS(100));
-
-    xMPU9250Queue = xQueueCreate(MPU9250_DATA_QUEUE_SIZE, sizeof(mpu9250_data_t));
     err = xTaskCreate(
         xMPU9250ProcessingTask,
         "mpu_task",

@@ -96,8 +96,6 @@ void app_main(void)
         ui_init();
         lvgl_unlock();
     }
-    // initialize lvgl input device (5 buttons)
-    indev_init();
     // Initialize mDNS
     initialise_mdns();
 
@@ -127,6 +125,10 @@ void app_main(void)
     // display task
     xDisplayQueueA = xQueueCreate(16, sizeof(mpu9250_data_t));
     xDisplayQueueB = xQueueCreate(16, sizeof(gps_t));
+
+    // initialize lvgl input device (5 buttons)
+    indev_init();
+
     xTaskCreate(
         xDispMeasurementsTask,
         "disp_measurements",
@@ -142,8 +144,4 @@ void app_main(void)
         NULL,
         2,
         &xStoreFileTaskHandle);
-    while (1)
-    {
-        vTaskDelay(pdMS_TO_TICKS(1));
-    }
 }

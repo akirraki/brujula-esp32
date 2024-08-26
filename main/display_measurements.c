@@ -30,7 +30,7 @@ void xDispMeasurementsTask(void *pvParameter)
     mpu9250_data_t gyroMagnetoData;
     char buf[64];
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(150);
+    const TickType_t xFrequency = pdMS_TO_TICKS(200);
 
     for (;;)
     {
@@ -103,7 +103,7 @@ void MIDIERON(lv_event_t *e)
 void CALIBRARON(lv_event_t *e)
 {
     xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
-    lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
+    // lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
 }
 void BORRARON(lv_event_t *e)
 {

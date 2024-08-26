@@ -21,12 +21,53 @@ lv_indev_drv_t indev_drv;
 static lv_obj_t *scr1_objects[SCR1_OBJ_AMOUNT];
 static lv_obj_t *scr3_objects[SCR3_OBJ_AMOUNT];
 
+typedef struct pulsador_t
+{
+    botonera_id_t button_id;
+    uint8_t group_id;
+    uint8_t isLongPress;
+
+} pulsador_t;
+
 typedef enum
 {
     SCREEN1 = 1,
     SCREEN2,
     SCREEN3,
 } screens_t;
+
+// This one's for the up/down/enter keys only
+static void button_clicked_event_cb1(void *arg, void *data)
+{
+    uint32_t key_pressed = (botonera_id_t)data;
+    xQueueSendToBack(xKeypadQueue, &key_pressed, 0);
+}
+
+// this one's for left/right keys only
+static void button_clicked_event_cb2(void *arg, void *data)
+{
+    uint32_t key_pressed = (botonera_id_t)data;
+    switch (key_pressed)
+    {
+    case DERECHA:
+    {
+        xTaskNotify(xSwTaskHandle, R_FLAG, eSetBits);
+        break;
+    }
+    case IZQUIERDA:
+    {
+        xTaskNotify(xSwTaskHandle, L_FLAG, eSetBits);
+        break;
+    }
+    default:
+        break;
+    }
+}
+// This one's called when pressing and holding the enter key only
+static void button_longpress_event_cb(void *arg, void *data)
+{
+    uint32_t key_pressed = (botonera_id_t)data;
+}
 
 static void xSwitchScreenTask(void *pvParameter);
 TaskHandle_t xSwTaskHandle = NULL;
@@ -158,6 +199,13 @@ static void xSwitchScreenTask(void *pvParameter)
 
 void indev_init(void)
 {
+    xKeypadQueue = xQueueCreate(16, sizeof(uint32_t));
+    xTaskCreate(xSwitchScreenTask,
+                "screensTask",
+                1024,
+                NULL,
+                2,
+                &xSwTaskHandle);
     // el compilador no me deja inicializar arreglos con variables
     // tampoco me deja inicializar arreglos si su tamaño esta dado
     // por una const, reemplazando por un #define con el tamaño lo resuelve
@@ -168,28 +216,25 @@ void indev_init(void)
     scr3_objects[1] = ui_Calibrar;
     scr3_objects[2] = ui_Borrar_medidas;
 
-    xKeypadQueue = xQueueCreate(10, sizeof(uint32_t));
-    xTaskCreate(xSwitchScreenTask,
-                "screensTask",
-                1024,
-                NULL,
-                2,
-                &xSwTaskHandle);
+    button_init(PIN_BOTON_ENTER, ENTER, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
+    button_init(PIN_BOTON_ENTER, ENTER, BUTTON_LONG_PRESS_START, button_longpress_event_cb);
+    button_init(PIN_BOTON_ARRIBA, ARRIBA, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
+    button_init(PIN_BOTON_ABAJO, ABAJO, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
+    button_init(PIN_BOTON_DER, DERECHA, BUTTON_SINGLE_CLICK, button_clicked_event_cb2);
+    button_init(PIN_BOTON_IZQ, IZQUIERDA, BUTTON_SINGLE_CLICK, button_clicked_event_cb2);
 
-    button_init(PIN_BOTON_ENTER, ENTER);
-    button_init(PIN_BOTON_DER, DERECHA);
-    button_init(PIN_BOTON_IZQ, IZQUIERDA);
-    button_init(PIN_BOTON_ARRIBA, ARRIBA);
-    button_init(PIN_BOTON_ABAJO, ABAJO);
+    if (lvgl_lock(-1))
+    {
+        lv_indev_drv_init(&indev_drv); /*Basic initialization*/
+        indev_drv.type = LV_INDEV_TYPE_KEYPAD;
+        indev_drv.disp = my_diplay;
+        indev_drv.read_cb = keyboard_read;
+        /*Register the driver in LVGL and save the created input device object*/
+        lv_indev_t *my_indev = lv_indev_drv_register(&indev_drv);
 
-    lv_indev_drv_init(&indev_drv); /*Basic initialization*/
-    indev_drv.type = LV_INDEV_TYPE_KEYPAD;
-    indev_drv.disp = my_diplay;
-    indev_drv.read_cb = keyboard_read;
-    /*Register the driver in LVGL and save the created input device object*/
-    lv_indev_t *my_indev = lv_indev_drv_register(&indev_drv);
-
-    my_group = lv_group_create();
-    add_lvgl_objects(scr1_objects, SCR1_OBJ_AMOUNT);
-    lv_indev_set_group(my_indev, my_group);
+        my_group = lv_group_create();
+        add_lvgl_objects(scr1_objects, SCR1_OBJ_AMOUNT);
+        lv_indev_set_group(my_indev, my_group);
+        lvgl_unlock();
+    }
 }

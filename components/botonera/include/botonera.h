@@ -1,6 +1,7 @@
 #ifndef BOTONERA_H
 #define BOTONERA_H
 
+#include "iot_button.h"
 typedef enum
 {
     ARRIBA = 0,
@@ -18,6 +19,6 @@ typedef enum
 #define BUTTON_ACTIVE_LEVEL 0
 
 // static void button_event_cb(void *arg, void *data);
-void button_init(uint32_t button_num, botonera_id_t id);
+void button_init(uint32_t button_num, botonera_id_t id, button_event_t event, button_cb_t callback);
 
 #endif
