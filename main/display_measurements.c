@@ -137,49 +137,53 @@ void xStoreFileTask(void *pvParameter)
     const char *csv_filepath = "/csvfiles";
     const char *brujula_header = "Nivel, Buzamiento, DB\n";
     const char *gps_header = "Fecha, Hora, Latitud, Longitud, Altitud\n";
+    uint32_t xNotifiedValue = 0x00;
     char filepath[80] = {};
-    char buffer[80] = {};
     for (;;)
     {
-        // xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, portMAX_DELAY);
-        xStatus = pdFALSE;
-        if (xStatus == pdTRUE)
+        xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
+        if ((xNotifiedValue & 0x07) != 0)
         {
-            DIR *dirp;
-            struct dirent *entry;
+            xTaskNotify(xMPU9250ProcessingTaskHandle, SEND_DATA_FLAG, eSetBits);
+            xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, portMAX_DELAY);
+            if (xStatus == pdTRUE)
+            {
+                //                DIR *dirp;
+                //                struct dirent *entry;
+                //
+                //                dirp = opendir(csv_filepath);
+                //                if (dirp == NULL)
+                //                {
+                //                    taskYIELD();
+                //                }
+                //                while ((entry = readdir(dirp)) != NULL)
+                //                {
+                //                    if (entry->d_type == DT_REG)
+                //                    { /* If the entry is a regular file */
+                //                        file_count++;
+                //                    }
+                //                }
+                //                closedir(dirp);
+                // write data to.csv file
+                snprintf(filepath, sizeof(filepath), "%s/brujula_data%d.csv", csv_filepath, file_count);
 
-            dirp = opendir(csv_filepath);
-            if (dirp == NULL)
-            {
-                taskYIELD();
-            }
-            while ((entry = readdir(dirp)) != NULL)
-            {
-                if (entry->d_type == DT_REG)
-                { /* If the entry is a regular file */
-                    file_count++;
+                FILE *file = fopen(filepath, "a");
+                if (file == NULL)
+                {
+                    taskYIELD();
+                    continue;
                 }
-            }
-            closedir(dirp);
-            // write data to.csv file
-            snprintf(filepath, sizeof(filepath), "%s/brujula_data%d.csv", csv_filepath, file_count);
 
-            FILE *file = fopen(filepath, "a");
-            if (file == NULL)
-            {
-                taskYIELD();
-            }
+                // if file is empty (new file), write header
+                if (ftell(file) == 0)
+                {
+                    fputs(brujula_header, file);
+                }
 
-            // if file is empty (new file), write header
-            if (ftell(file) == 0)
-            {
-                fputs(brujula_header, file);
+                fprintf(file, "%.05f, %.05f, %.05f\n", brujulaData.nivel, brujulaData.buzamiento, brujulaData.dir_buzamiento);
+                fclose(file);
+                file_count++;
             }
-
-            fprintf(file, "%.05f, %.05f, %.05f\n", brujulaData.nivel, brujulaData.buzamiento, brujulaData.dir_buzamiento);
-            fclose(file);
-            file_count = 0;
-            taskYIELD();
         }
     }
 }

@@ -129,7 +129,7 @@ static void xSwitchScreenTask(void *pvParameter)
                                  portMAX_DELAY);
         if (result == pdPASS)
         {
-            if (lvgl_lock(-1))
+            if (lvgl_lock(250))
             {
                 if ((notifiedValue & R_FLAG) != 0)
                 {
