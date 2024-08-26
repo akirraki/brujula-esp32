@@ -10,15 +10,13 @@
 
 #define R_FLAG (0x01)
 #define L_FLAG (0x02)
-#define ENTER_FLAG (0x03)
+#define ENTER_LP_FLAG (0x10)
 
 lv_group_t *my_group;
 lv_indev_drv_t indev_drv;
 
-#define SCR1_OBJ_AMOUNT 1
 #define SCR3_OBJ_AMOUNT 3
 
-static lv_obj_t *scr1_objects[SCR1_OBJ_AMOUNT];
 static lv_obj_t *scr3_objects[SCR3_OBJ_AMOUNT];
 
 typedef struct pulsador_t
@@ -40,33 +38,39 @@ typedef enum
 static void button_clicked_event_cb1(void *arg, void *data)
 {
     uint32_t key_pressed = (botonera_id_t)data;
-    xQueueSendToBack(xKeypadQueue, &key_pressed, 0);
+    xQueueSendToBackFromISR(xKeypadQueue, &key_pressed, NULL);
 }
 
 // this one's for left/right keys only
 static void button_clicked_event_cb2(void *arg, void *data)
 {
     uint32_t key_pressed = (botonera_id_t)data;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     switch (key_pressed)
     {
     case DERECHA:
     {
-        xTaskNotify(xSwTaskHandle, R_FLAG, eSetBits);
+        xTaskNotifyFromISR(xSwTaskHandle, R_FLAG, eSetBits, &xHigherPriorityTaskWoken);
         break;
     }
     case IZQUIERDA:
     {
-        xTaskNotify(xSwTaskHandle, L_FLAG, eSetBits);
+        xTaskNotifyFromISR(xSwTaskHandle, L_FLAG, eSetBits, &xHigherPriorityTaskWoken);
         break;
     }
     default:
         break;
     }
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 // This one's called when pressing and holding the enter key only
 static void button_longpress_event_cb(void *arg, void *data)
 {
-    uint32_t key_pressed = (botonera_id_t)data;
+    // uint32_t key_pressed = (botonera_id_t)data;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    // if (key_pressed == ENTER)
+    xTaskNotifyFromISR(xSwTaskHandle, ENTER_LP_FLAG, eSetBits, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 static void xSwitchScreenTask(void *pvParameter);
@@ -119,7 +123,7 @@ static void add_lvgl_objects(lv_obj_t **obj_arr, uint8_t n)
 static void xSwitchScreenTask(void *pvParameter)
 {
     BaseType_t result;
-    static uint32_t notifiedValue = 0;
+    static uint32_t notifiedValue = 0x00;
     static screens_t screenContext = SCREEN1;
     for (;;)
     {
@@ -129,7 +133,7 @@ static void xSwitchScreenTask(void *pvParameter)
                                  portMAX_DELAY);
         if (result == pdPASS)
         {
-            if (lvgl_lock(250))
+            if (lvgl_lock(100))
             {
                 if ((notifiedValue & R_FLAG) != 0)
                 {
@@ -152,7 +156,6 @@ static void xSwitchScreenTask(void *pvParameter)
                     case SCREEN3:
                     {
                         screenContext = SCREEN1;
-                        add_lvgl_objects(scr1_objects, SCR1_OBJ_AMOUNT);
                         lv_event_send(ui_De3a1, LV_EVENT_CLICKED, NULL);
                         break;
                     }
@@ -161,7 +164,7 @@ static void xSwitchScreenTask(void *pvParameter)
                     }
                 }
 
-                if ((notifiedValue & L_FLAG) != 0)
+                else if ((notifiedValue & L_FLAG) != 0)
                 {
                     lv_group_remove_all_objs(my_group);
                     switch (screenContext)
@@ -176,7 +179,6 @@ static void xSwitchScreenTask(void *pvParameter)
                     case SCREEN2:
                     {
                         screenContext = SCREEN1;
-                        add_lvgl_objects(scr1_objects, SCR1_OBJ_AMOUNT);
                         lv_event_send(ui_De2a1, LV_EVENT_CLICKED, NULL);
                         break;
                     }
@@ -190,38 +192,47 @@ static void xSwitchScreenTask(void *pvParameter)
                         break;
                     }
                 }
+                else if ((notifiedValue & ENTER_LP_FLAG) != 0)
+                {
+                    screenContext = SCREEN1;
+                    lv_group_remove_all_objs(my_group);
+                    lv_group_add_obj(my_group, ui_SIPI);
+                    lv_group_add_obj(my_group, ui_NOPO);
+                    lv_event_send(ui_Medir, LV_EVENT_CLICKED, NULL);
+                }
                 lvgl_unlock();
             }
         }
-        taskYIELD();
     }
 }
 
 void indev_init(void)
 {
-    xKeypadQueue = xQueueCreate(16, sizeof(uint32_t));
+    xKeypadQueue = xQueueCreate(32, sizeof(uint32_t));
     xTaskCreate(xSwitchScreenTask,
                 "screensTask",
                 1024,
                 NULL,
-                2,
+                4,
                 &xSwTaskHandle);
     // el compilador no me deja inicializar arreglos con variables
     // tampoco me deja inicializar arreglos si su tamaño esta dado
     // por una const, reemplazando por un #define con el tamaño lo resuelve
     // en fin, el gcc maneja el patrullero
     // muy mala solucion:
-    scr1_objects[0] = ui_Medir;
     scr3_objects[0] = ui_Wifi;
     scr3_objects[1] = ui_Calibrar;
     scr3_objects[2] = ui_Borrar_medidas;
 
-    button_init(PIN_BOTON_ENTER, ENTER, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
-    button_init(PIN_BOTON_ENTER, ENTER, BUTTON_LONG_PRESS_START, button_longpress_event_cb);
-    button_init(PIN_BOTON_ARRIBA, ARRIBA, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
-    button_init(PIN_BOTON_ABAJO, ABAJO, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
-    button_init(PIN_BOTON_DER, DERECHA, BUTTON_SINGLE_CLICK, button_clicked_event_cb2);
-    button_init(PIN_BOTON_IZQ, IZQUIERDA, BUTTON_SINGLE_CLICK, button_clicked_event_cb2);
+    button_handle_t enter_key = my_button_init(PIN_BOTON_ENTER, ENTER, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
+    my_button_init(PIN_BOTON_ARRIBA, ARRIBA, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
+    my_button_init(PIN_BOTON_ABAJO, ABAJO, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
+    my_button_init(PIN_BOTON_DER, DERECHA, BUTTON_SINGLE_CLICK, button_clicked_event_cb2);
+    my_button_init(PIN_BOTON_IZQ, IZQUIERDA, BUTTON_SINGLE_CLICK, button_clicked_event_cb2);
+
+    // extra: enter key long press
+    // ahi no te enojas?!
+    iot_button_register_cb(enter_key, BUTTON_LONG_PRESS_START, button_longpress_event_cb, NULL);
 
     if (lvgl_lock(-1))
     {
@@ -233,7 +244,6 @@ void indev_init(void)
         lv_indev_t *my_indev = lv_indev_drv_register(&indev_drv);
 
         my_group = lv_group_create();
-        add_lvgl_objects(scr1_objects, SCR1_OBJ_AMOUNT);
         lv_indev_set_group(my_indev, my_group);
         lvgl_unlock();
     }

@@ -2,7 +2,7 @@
 #include "botonera.h"
 #include "driver/gpio.h"
 
-void button_init(uint32_t button_num, botonera_id_t id, button_event_t event, button_cb_t callback)
+button_handle_t my_button_init(uint32_t button_num, botonera_id_t id, button_event_t event, button_cb_t callback)
 {
     button_config_t btn_cfg = {
         .type = BUTTON_TYPE_GPIO,
@@ -15,4 +15,5 @@ void button_init(uint32_t button_num, botonera_id_t id, button_event_t event, bu
     assert(btn);
     esp_err_t err = iot_button_register_cb(btn, event, callback, (void *)id);
     ESP_ERROR_CHECK(err);
+    return btn;
 }

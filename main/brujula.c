@@ -134,7 +134,7 @@ void app_main(void)
         "disp_measurements",
         1024 * 2,
         NULL,
-        2,
+        1,
         &xDispMeasurementsTaskHandle);
     // storage tasks
     xTaskCreate(
@@ -142,6 +142,6 @@ void app_main(void)
         "store_a_file",
         1024 * 2,
         NULL,
-        2,
+        3,
         &xStoreFileTaskHandle);
 }

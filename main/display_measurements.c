@@ -37,9 +37,12 @@ void xDispMeasurementsTask(void *pvParameter)
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
         if (finished_cal == 1)
         {
-            if (lvgl_lock(50))
+            if (lvgl_lock(-1))
             {
                 finished_cal = 0;
+                lv_group_add_obj(my_group, ui_Wifi);
+                lv_group_add_obj(my_group, ui_Calibrar);
+                lv_group_add_obj(my_group, ui_Borrar_medidas);
                 lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
                 lvgl_unlock();
             }
@@ -47,7 +50,7 @@ void xDispMeasurementsTask(void *pvParameter)
         if (lv_scr_act() == ui_Screen1)
         {
             xTaskNotify(xMPU9250ProcessingTaskHandle, 0x03, eSetBits);
-            status = xQueueReceive(xDisplayQueueA, &gyroMagnetoData, pdMS_TO_TICKS(100));
+            status = xQueueReceive(xDisplayQueueA, &gyroMagnetoData, pdMS_TO_TICKS(10));
             if (status == pdTRUE)
             {
                 if (lvgl_lock(100))
@@ -66,7 +69,7 @@ void xDispMeasurementsTask(void *pvParameter)
         if (lv_scr_act() == ui_Screen2)
         {
             xTaskNotify(xGPSTaskHandle, 0x02, eSetBits);
-            status = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(100));
+            status = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(10));
             if (status == pdTRUE)
             {
                 if (lvgl_lock(100))
@@ -105,12 +108,14 @@ void WIFION(lv_event_t *e)
 }
 void MIDIERON(lv_event_t *e)
 {
-    lv_group_remove_all_objs(my_group);
-    lv_group_add_obj(my_group, ui_SIPI);
-    lv_group_add_obj(my_group, ui_NOPO);
 }
 void CALIBRARON(lv_event_t *e)
 {
+    if (lvgl_lock(500))
+    {
+        lv_group_remove_all_objs(my_group);
+        lvgl_unlock();
+    }
     xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
 }
 void BORRARON(lv_event_t *e)
@@ -118,14 +123,22 @@ void BORRARON(lv_event_t *e)
 }
 void NOPOFUNCION(lv_event_t *e)
 {
-    lv_group_remove_all_objs(my_group);
-    lv_group_add_obj(my_group, ui_Medir);
+    if (lvgl_lock(500))
+    {
+        lv_group_remove_all_objs(my_group);
+        lv_group_add_obj(my_group, ui_Medir);
+        lvgl_unlock();
+    }
 }
 void SIPIFUNCION(lv_event_t *e)
 {
     xTaskNotify(xStoreFileTaskHandle, 0x07, eSetBits);
-    lv_group_remove_all_objs(my_group);
-    lv_group_add_obj(my_group, ui_Medir);
+    if (lvgl_lock(500))
+    {
+        lv_group_remove_all_objs(my_group);
+        lv_group_add_obj(my_group, ui_Medir);
+        lvgl_unlock();
+    }
 }
 
 void xStoreFileTask(void *pvParameter)
@@ -148,22 +161,22 @@ void xStoreFileTask(void *pvParameter)
             xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, portMAX_DELAY);
             if (xStatus == pdTRUE)
             {
-                //                DIR *dirp;
-                //                struct dirent *entry;
-                //
-                //                dirp = opendir(csv_filepath);
-                //                if (dirp == NULL)
-                //                {
-                //                    taskYIELD();
-                //                }
-                //                while ((entry = readdir(dirp)) != NULL)
-                //                {
-                //                    if (entry->d_type == DT_REG)
-                //                    { /* If the entry is a regular file */
-                //                        file_count++;
-                //                    }
-                //                }
-                //                closedir(dirp);
+                DIR *dirp;
+                struct dirent *entry;
+
+                dirp = opendir(csv_filepath);
+                if (dirp == NULL)
+                {
+                    taskYIELD();
+                }
+                while ((entry = readdir(dirp)) != NULL)
+                {
+                    if (entry->d_type == DT_REG)
+                    { /* If the entry is a regular file */
+                        file_count++;
+                    }
+                }
+                closedir(dirp);
                 // write data to.csv file
                 snprintf(filepath, sizeof(filepath), "%s/brujula_data%d.csv", csv_filepath, file_count);
 
@@ -182,7 +195,7 @@ void xStoreFileTask(void *pvParameter)
 
                 fprintf(file, "%.05f, %.05f, %.05f\n", brujulaData.nivel, brujulaData.buzamiento, brujulaData.dir_buzamiento);
                 fclose(file);
-                file_count++;
+                file_count = 0;
             }
         }
     }

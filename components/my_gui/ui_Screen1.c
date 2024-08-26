@@ -212,5 +212,5 @@ void ui_Screen1_screen_init(void)
 
     lv_obj_add_event_cb(ui_De1a2, ui_event_De1a2, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_De1a3, ui_event_De1a3, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_Medir, ui_event_Medir, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(ui_Medir, ui_event_Medir, LV_EVENT_ALL, NULL);
 }

@@ -18,7 +18,6 @@ typedef enum
 #define PIN_BOTON_ABAJO 25
 #define BUTTON_ACTIVE_LEVEL 0
 
-// static void button_event_cb(void *arg, void *data);
-void button_init(uint32_t button_num, botonera_id_t id, button_event_t event, button_cb_t callback);
+button_handle_t my_button_init(uint32_t button_num, botonera_id_t id, button_event_t event, button_cb_t callback);
 
 #endif
