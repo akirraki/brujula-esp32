@@ -66,7 +66,7 @@ void xDispMeasurementsTask(void *pvParameter)
         if (lv_scr_act() == ui_Screen1)
         {
             xTaskNotify(xMPU9250ProcessingTaskHandle, 0x03, eSetBits);
-            status = xQueueReceive(xDisplayQueueA, &gyroMagnetoData, pdMS_TO_TICKS(10));
+            status = xQueueReceive(xDisplayQueueA, &gyroMagnetoData, pdMS_TO_TICKS(50));
             if (status == pdTRUE)
             {
                 if (lvgl_lock(100))
@@ -85,7 +85,7 @@ void xDispMeasurementsTask(void *pvParameter)
         if (lv_scr_act() == ui_Screen2)
         {
             xTaskNotify(xGPSTaskHandle, 0x02, eSetBits);
-            status = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(10));
+            status = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(50));
             if (status == pdTRUE)
             {
                 if (lvgl_lock(100))
@@ -101,6 +101,18 @@ void xDispMeasurementsTask(void *pvParameter)
                     snprintf(buf, sizeof(buf), "%d:%d:%d", gpsData.tim.hour + TIME_ZONE, gpsData.tim.minute, gpsData.tim.second);
                     lv_label_set_text(ui_Label20, buf); // hora
 
+                    lvgl_unlock();
+                }
+            }
+            else
+            {
+                if (lvgl_lock(100))
+                {
+                    lv_label_set_text(ui_Label24, "ERROR"); // latitud
+                    lv_label_set_text(ui_Label23, "ERROR"); // longitud
+                    lv_label_set_text(ui_Label22, "ERROR"); // altura
+                    lv_label_set_text(ui_Label21, "ERROR"); // fecha
+                    lv_label_set_text(ui_Label20, "ERROR"); // hora
                     lvgl_unlock();
                 }
             }

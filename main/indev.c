@@ -70,7 +70,10 @@ static void button_longpress_event_cb(void *arg, void *data)
     // uint32_t key_pressed = (botonera_id_t)data;
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     // if (key_pressed == ENTER)
-    xTaskNotifyFromISR(xSwTaskHandle, ENTER_LP_FLAG, eSetBits, &xHigherPriorityTaskWoken);
+    if (lv_scr_act() == ui_Screen1)
+    {
+        xTaskNotifyFromISR(xSwTaskHandle, ENTER_LP_FLAG, eSetBits, &xHigherPriorityTaskWoken);
+    }
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 

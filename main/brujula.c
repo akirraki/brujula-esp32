@@ -134,7 +134,7 @@ void app_main(void)
     xTaskCreate(
         xDispMeasurementsTask,
         "disp_measurements",
-        1024 * 2,
+        1024 * 8,
         NULL,
         1,
         &xDispMeasurementsTaskHandle);

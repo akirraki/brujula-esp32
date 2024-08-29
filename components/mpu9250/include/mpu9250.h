@@ -21,7 +21,7 @@ typedef struct mpu9250_data_t
 esp_err_t mpu9250_init(void);
 void Calibracion(void);
 
-extern uint8_t finished_cal;
+extern volatile uint8_t finished_cal;
 extern QueueHandle_t xMPU9250Queue;
 extern TaskHandle_t xMPU9250CalTaskHandle;
 extern TaskHandle_t xMPU9250ProcessingTaskHandle;

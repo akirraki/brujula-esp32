@@ -31,7 +31,8 @@
         "chrono": "c",
         "nmea_parser.h": "c",
         "numbers": "cpp",
-        "botonera.h": "c"
+        "botonera.h": "c",
+        "mpu9250.h": "c"
     },
     "terminal.integrated.defaultProfile.windows": "Command Prompt",
     "terminal.integrated.profiles.windows": {

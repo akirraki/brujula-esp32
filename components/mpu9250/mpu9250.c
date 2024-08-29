@@ -144,6 +144,9 @@ void xMPU9250ProcessingTask(void *arg)
         .buzamiento = 0.00f,
         .dir_buzamiento = 0.00f,
     };
+    float mX_rot;
+    float mY_rot;
+    float mZ_rot;
     FilterTypeDef Nivel_Filter;
     FilterTypeDef Buzamiento_Filter;
     FilterTypeDef Dir_Buzamiento_Filter;
@@ -167,23 +170,26 @@ void xMPU9250ProcessingTask(void *arg)
         // Total field 23.5304 uT
         // plot-calibration-data.py
 
-        Brujula = atan2(MagX, -MagY) * (180.0 / M_PI);
+        AccX -= RateCalibrationAccX;
+        AccY -= RateCalibrationAccY;
+        AccZ -= RateCalibrationAccZ;
+        // Calculo e imprimo los angulos que forman con respecto al eje Z
+        AngleRoll = atan(AccY / sqrt(AccX * AccX + AccZ * AccZ)) * 1 / (M_PI / 180);   // buzamiento
+        AnglePitch = -atan(AccX / sqrt(AccY * AccY + AccZ * AccZ)) * 1 / (M_PI / 180); // nivel
+
+        mX_rot = MagX * cos(AnglePitch) - MagZ * sin(AnglePitch);
+        mY_rot = -MagY;
+        mZ_rot = MagX * sin(AnglePitch) + MagZ * cos(AnglePitch);
+
+        Brujula = atan2(mX_rot, mY_rot) * (180.0 / M_PI);
         if (Brujula < 0)
         {
             Brujula = 360 + Brujula;
         }
 
-        RateRoll -= RateCalibrationRoll;
-        RatePitch -= RateCalibrationPitch;
-        RateYaw -= RateCalibrationYaw;
-
-        AccX -= RateCalibrationAccX;
-        AccY -= RateCalibrationAccY;
-        AccZ -= RateCalibrationAccZ;
-
-        // Calculo e imprimo los angulos que forman con respecto al eje Z
-        AngleRoll = atan(AccY / sqrt(AccX * AccX + AccZ * AccZ)) * 1 / (M_PI / 180);   // buzamiento
-        AnglePitch = -atan(AccX / sqrt(AccY * AccY + AccZ * AccZ)) * 1 / (M_PI / 180); // nivel
+        // RateRoll -= RateCalibrationRoll;
+        // RatePitch -= RateCalibrationPitch;
+        // RateYaw -= RateCalibrationYaw;
 
         // Send MPU data
         datos.dir_buzamiento = Moving_Average_Compute(Brujula, &Dir_Buzamiento_Filter);
