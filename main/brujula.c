@@ -56,6 +56,8 @@ TaskHandle_t xGPSTaskHandle = NULL;
 
 // storage
 TaskHandle_t xStoreFileTaskHandle = NULL;
+TaskHandle_t xDeleteAllFilesTaskHandle = NULL;
+void xDeleteAllFilesTask(void *pvParameter);
 void xStoreFileTask(void *pvParameter);
 
 void app_main(void)
@@ -104,7 +106,7 @@ void app_main(void)
     netbiosns_set_name("brujula");
 
     /* NMEA parser configuration */
-    xGPSDataQueue = xQueueCreate(16, sizeof(gps_t));
+    xGPSDataQueue = xQueueCreate(8, sizeof(gps_t));
 
     xTaskCreate(
         xGPSTask,
@@ -144,4 +146,11 @@ void app_main(void)
         NULL,
         3,
         &xStoreFileTaskHandle);
+
+    xTaskCreate(xDeleteAllFilesTask,
+                "deleteFiles",
+                1024 * 4,
+                NULL,
+                3,
+                &xDeleteAllFilesTaskHandle);
 }

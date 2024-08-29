@@ -19,6 +19,7 @@ lv_indev_drv_t indev_drv;
 
 static lv_obj_t *scr3_objects[SCR3_OBJ_AMOUNT];
 
+// might use later
 typedef struct pulsador_t
 {
     botonera_id_t button_id;

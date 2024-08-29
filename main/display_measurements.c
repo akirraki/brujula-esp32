@@ -9,6 +9,7 @@
 #include "wifi_ap.h"
 #include "indev.h"
 #include <stdio.h>
+#include <sys/unistd.h>
 #include "dirent.h"
 
 extern QueueHandle_t xDisplayQueueA;
@@ -16,10 +17,13 @@ extern QueueHandle_t xDisplayQueueB;
 extern TaskHandle_t xDispMeasurementsTaskHandle;
 extern TaskHandle_t xGPSTaskHandle;
 extern TaskHandle_t xStoreFileTaskHandle;
+extern TaskHandle_t xDeleteAllFilesTaskHandle;
 extern TaskHandle_t xMPU9250CalTaskHandle;
 
 #define YEAR_BASE (2000)
 #define TIME_ZONE (-3) // Buenos Aires
+
+volatile uint8_t finishedDeletingFiles = 0;
 
 void xDispMeasurementsTask(void *pvParameter);
 
@@ -44,6 +48,18 @@ void xDispMeasurementsTask(void *pvParameter)
                 lv_group_add_obj(my_group, ui_Calibrar);
                 lv_group_add_obj(my_group, ui_Borrar_medidas);
                 lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
+                lvgl_unlock();
+            }
+        }
+        if (finishedDeletingFiles == 1)
+        {
+            if (lvgl_lock(-1))
+            {
+                finishedDeletingFiles = 0;
+                lv_group_add_obj(my_group, ui_Wifi);
+                lv_group_add_obj(my_group, ui_Calibrar);
+                lv_group_add_obj(my_group, ui_Borrar_medidas);
+                lv_event_send(ui_Salir2, LV_EVENT_CLICKED, NULL);
                 lvgl_unlock();
             }
         }
@@ -114,12 +130,18 @@ void CALIBRARON(lv_event_t *e)
     if (lvgl_lock(500))
     {
         lv_group_remove_all_objs(my_group);
+        xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
         lvgl_unlock();
     }
-    xTaskNotify(xMPU9250CalTaskHandle, CALIBRATE_FLAG, eSetBits);
 }
 void BORRARON(lv_event_t *e)
 {
+    if (lvgl_lock(500))
+    {
+        lv_group_remove_all_objs(my_group);
+        xTaskNotify(xDeleteAllFilesTaskHandle, 0x0E, eSetBits);
+        lvgl_unlock();
+    }
 }
 void NOPOFUNCION(lv_event_t *e)
 {
@@ -132,9 +154,10 @@ void NOPOFUNCION(lv_event_t *e)
 }
 void SIPIFUNCION(lv_event_t *e)
 {
-    xTaskNotify(xStoreFileTaskHandle, 0x07, eSetBits);
+
     if (lvgl_lock(500))
     {
+        xTaskNotify(xStoreFileTaskHandle, 0x07, eSetBits);
         lv_group_remove_all_objs(my_group);
         lv_group_add_obj(my_group, ui_Medir);
         lvgl_unlock();
@@ -150,6 +173,7 @@ void xStoreFileTask(void *pvParameter)
     const char *csv_filepath = "/csvfiles";
     const char *brujula_header = "Nivel, Buzamiento, DB\n";
     const char *gps_header = "Fecha, Hora, Latitud, Longitud, Altitud\n";
+    const char *dummy_gps_data[5] = {"22/02/2001", "23:59:59", "err", "err", "err"};
     uint32_t xNotifiedValue = 0x00;
     char filepath[80] = {};
     for (;;)
@@ -197,6 +221,30 @@ void xStoreFileTask(void *pvParameter)
                 fclose(file);
                 file_count = 0;
             }
+        }
+    }
+}
+
+void xDeleteAllFilesTask(void *pvParameter)
+{
+    const char *csv_filepath = "/csvfiles";
+    char filepath[256 + 15] = {};
+    DIR *dir;
+    struct dirent *entry;
+    uint32_t xNotifiedValue = 0x00;
+    for (;;)
+    {
+        xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
+        if ((xNotifiedValue & 0x0E) != 0)
+        {
+            dir = opendir(csv_filepath);
+            while ((entry = readdir(dir)) != NULL)
+            {
+                snprintf(filepath, sizeof(filepath), "%s/%s", csv_filepath, entry->d_name);
+                unlink(filepath);
+            }
+            closedir(dir);
+            finishedDeletingFiles = 1;
         }
     }
 }

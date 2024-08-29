@@ -23,7 +23,7 @@ TaskHandle_t xMPU9250ProcessingTaskHandle = NULL;
 TaskHandle_t xMPU9250CalTaskHandle = NULL;
 SemaphoreHandle_t xI2CMutex = NULL;
 
-uint8_t finished_cal = 0;
+volatile uint8_t finished_cal = 0;
 
 static const char *TAG = "mpu-9250";
 
