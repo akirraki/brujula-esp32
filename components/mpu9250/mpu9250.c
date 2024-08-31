@@ -52,8 +52,8 @@ static float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw;
 static float RateCalibrationAccX, RateCalibrationAccY, RateCalibrationAccZ;
 static float RateCalibrationMagX, RateCalibrationMagY, RateCalibrationMagZ;
 //-----------------------------------------------------------------------------------------------------------------
-static float A[3][3] = {{1.174283, 0.082554, -0.014338}, {0.082554, 1.405411, 0.085421}, {-0.014338, 0.085421, 1.383696}}; // Corrección de hierro dulce y desalineación (fila, columna)
-static float B[3] = {19.633246, 23.913493, 16.036698};                                                                     // Corrección de hierro duro
+static float A[3][3] = {{1.206608, 0.008575, 0.032039}, {0.008575, 1.415163, 0.105131}, {0.032039, 0.105131, 1.471221}}; // Corrección de hierro dulce y desalineación (fila, columna)
+static float B[3] = {6.993961, 29.406449, 7.491985};                                                                     // Corrección de hierro duro
 //-----------------------------------------------------------------------------------------------------------------
 
 static const i2c_port_t i2c_master_port = 0;
@@ -149,10 +149,14 @@ void xMPU9250ProcessingTask(void *arg)
     float mZ_rot;
     FilterTypeDef Nivel_Filter;
     FilterTypeDef Buzamiento_Filter;
-    FilterTypeDef Dir_Buzamiento_Filter;
+    FilterTypeDef MagX_Filter;
+    FilterTypeDef MagY_Filter;
+    FilterTypeDef MagZ_Filter;
     Moving_Average_Init(&Nivel_Filter);
     Moving_Average_Init(&Buzamiento_Filter);
-    Moving_Average_Init(&Dir_Buzamiento_Filter);
+    Moving_Average_Init(&MagX_Filter);
+    Moving_Average_Init(&MagY_Filter);
+    Moving_Average_Init(&MagZ_Filter);
     uint32_t notified_value = 0U;
     for (;;)
     {
@@ -161,7 +165,9 @@ void xMPU9250ProcessingTask(void *arg)
             MPU_medidas();
             xSemaphoreGive(xI2CMutex);
         }
-
+        MagX = Moving_Average_Compute(MagX, &MagX_Filter); // usar en magX, magY, etc
+        MagY = Moving_Average_Compute(MagY, &MagY_Filter);
+        MagZ = Moving_Average_Compute(MagZ, &MagZ_Filter);
         //-----------------------------------------------------------------------------------------------------------------
         // PAGINA DE CALIBRACION https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm
         // Latitude: 38.732326579428076   S
@@ -177,11 +183,11 @@ void xMPU9250ProcessingTask(void *arg)
         AngleRoll = atan(AccY / sqrt(AccX * AccX + AccZ * AccZ)) * 1 / (M_PI / 180);   // buzamiento
         AnglePitch = -atan(AccX / sqrt(AccY * AccY + AccZ * AccZ)) * 1 / (M_PI / 180); // nivel
 
-        mX_rot = MagX * cos(AnglePitch) - MagZ * sin(AnglePitch);
-        mY_rot = -MagY;
-        mZ_rot = MagX * sin(AnglePitch) + MagZ * cos(AnglePitch);
+        // mX_rot = MagX * cos(AngleRoll) - MagZ * sin(AngleRoll);
+        // mY_rot = -MagY;
+        // mZ_rot = MagX * sin(AngleRoll) + MagZ * cos(AngleRoll);
 
-        Brujula = atan2(mX_rot, mY_rot) * (180.0 / M_PI);
+        Brujula = atan2(MagX, MagY) * (180.0 / M_PI) - 90.0;
         if (Brujula < 0)
         {
             Brujula = 360 + Brujula;
@@ -192,7 +198,8 @@ void xMPU9250ProcessingTask(void *arg)
         // RateYaw -= RateCalibrationYaw;
 
         // Send MPU data
-        datos.dir_buzamiento = Moving_Average_Compute(Brujula, &Dir_Buzamiento_Filter);
+        // datos.dir_buzamiento = Moving_Average_Compute(Brujula, &Dir_Buzamiento_Filter); // usar en magX, magY, etc
+        datos.dir_buzamiento = Brujula;
         datos.buzamiento = Moving_Average_Compute(AngleRoll, &Buzamiento_Filter);
         datos.nivel = Moving_Average_Compute(AnglePitch, &Nivel_Filter);
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, portMAX_DELAY);

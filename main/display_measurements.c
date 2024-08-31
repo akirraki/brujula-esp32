@@ -85,7 +85,7 @@ void xDispMeasurementsTask(void *pvParameter)
         if (lv_scr_act() == ui_Screen2)
         {
             xTaskNotify(xGPSTaskHandle, 0x02, eSetBits);
-            status = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(50));
+            status = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(20));
             if (status == pdTRUE)
             {
                 if (lvgl_lock(100))
@@ -136,6 +136,7 @@ void WIFION(lv_event_t *e)
 }
 void MIDIERON(lv_event_t *e)
 {
+    xTaskNotify(xStoreFileTaskHandle, 0x06, eSetBits);
 }
 void CALIBRARON(lv_event_t *e)
 {
@@ -183,18 +184,73 @@ void xStoreFileTask(void *pvParameter)
     BaseType_t xStatus = pdFALSE;
     static int file_count = 0;
     const char *csv_filepath = "/csvfiles";
-    const char *brujula_header = "Nivel, Buzamiento, DB\n";
-    const char *gps_header = "Fecha, Hora, Latitud, Longitud, Altitud\n";
-    const char *dummy_gps_data[5] = {"22/02/2001", "23:59:59", "err", "err", "err"};
+    const char *brujula_header = "Latitud, Longitud, Altitud, Buzamiento, DB, Fecha, Hora\n";
+    const char *dummy_gps_data[5] = {"error.", "error.", "error.", "error.", "error."};
     uint32_t xNotifiedValue = 0x00;
     char filepath[80] = {};
+    char buffer[100] = {};
     for (;;)
     {
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
-        if ((xNotifiedValue & 0x07) != 0)
+        if ((xNotifiedValue & 0x06) != 0)
         {
             xTaskNotify(xMPU9250ProcessingTaskHandle, SEND_DATA_FLAG, eSetBits);
-            xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, portMAX_DELAY);
+            xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, pdMS_TO_TICKS(100));
+            if (xStatus == pdTRUE)
+            {
+                if (lvgl_lock(500))
+                {
+                    snprintf(buffer, sizeof(buffer), " %.03f°", brujulaData.dir_buzamiento);
+                    lv_label_set_text(ui_Label1, buffer); // brujula
+                    snprintf(buffer, sizeof(buffer), " %.03f°", brujulaData.buzamiento);
+                    lv_label_set_text(ui_Label2, buffer); // buzamiento
+                    lvgl_unlock();
+                }
+            }
+            else
+            {
+                if (lvgl_lock(500))
+                {
+                    lv_label_set_text(ui_Label1, "error."); // brujula
+                    lv_label_set_text(ui_Label2, "error."); // buzamiento
+                    lvgl_unlock();
+                }
+            }
+            xTaskNotify(xGPSTaskHandle, 0x02, eSetBits);
+            xStatus = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(100));
+            if (xStatus == pdTRUE)
+            {
+                if (lvgl_lock(500))
+                {
+                    snprintf(buffer, sizeof(buffer), " %.03f", gpsData.latitude);
+                    lv_label_set_text(ui_Label3, buffer); // latitud
+                    snprintf(buffer, sizeof(buffer), " %.03f", gpsData.longitude);
+                    lv_label_set_text(ui_Label4, buffer); // longitud
+                    snprintf(buffer, sizeof(buffer), " %.03f", gpsData.altitude);
+                    lv_label_set_text(ui_Label5, buffer); // altura
+                    snprintf(buffer, sizeof(buffer), "%d/%d/%d", gpsData.date.day, gpsData.date.month, gpsData.date.year + YEAR_BASE);
+                    lv_label_set_text(ui_Label6, buffer); // fecha
+                    snprintf(buffer, sizeof(buffer), "%d:%d:%d", gpsData.tim.hour + TIME_ZONE, gpsData.tim.minute, gpsData.tim.second);
+                    lv_label_set_text(ui_Label7, buffer); // hora
+                    lvgl_unlock();
+                }
+            }
+            else
+            {
+                if (lvgl_lock(500))
+                {
+                    lv_label_set_text(ui_Label3, "error."); // latitud
+                    lv_label_set_text(ui_Label4, "error."); // longitud
+                    lv_label_set_text(ui_Label5, "error."); // altura
+                    lv_label_set_text(ui_Label6, "error."); // fecha
+                    lv_label_set_text(ui_Label7, "error."); // hora
+                    lvgl_unlock();
+                }
+            }
+        }
+        xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
+        if ((xNotifiedValue & 0x07) != 0)
+        {
             if (xStatus == pdTRUE)
             {
                 DIR *dirp;
@@ -229,7 +285,11 @@ void xStoreFileTask(void *pvParameter)
                     fputs(brujula_header, file);
                 }
 
-                fprintf(file, "%.05f, %.05f, %.05f\n", brujulaData.nivel, brujulaData.buzamiento, brujulaData.dir_buzamiento);
+                fprintf(file, "%.05f, %.05f, %.05f, %.05f, %.05f, %d/%d/%d, %d:%d:%d\n",
+                        gpsData.longitude, gpsData.latitude, gpsData.altitude, brujulaData.buzamiento,
+                        brujulaData.dir_buzamiento, gpsData.date.day, gpsData.date.month,
+                        gpsData.date.year + YEAR_BASE, gpsData.tim.hour + TIME_ZONE,
+                        gpsData.tim.minute, gpsData.tim.second);
                 fclose(file);
                 file_count = 0;
             }
@@ -250,7 +310,7 @@ void xDeleteAllFilesTask(void *pvParameter)
         if ((xNotifiedValue & 0x0E) != 0)
         {
             dir = opendir(csv_filepath);
-            while ((entry = readdir(dir)) != NULL)
+            while ((entry = readdir(dir)) != NULL) // leer readdir() y unlink() sino timeout de 1s
             {
                 snprintf(filepath, sizeof(filepath), "%s/%s", csv_filepath, entry->d_name);
                 unlink(filepath);

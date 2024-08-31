@@ -142,7 +142,7 @@ void app_main(void)
     xTaskCreate(
         xStoreFileTask,
         "store_a_file",
-        1024 * 2,
+        1024 * 4,
         NULL,
         3,
         &xStoreFileTaskHandle);
