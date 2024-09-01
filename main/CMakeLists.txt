@@ -17,3 +17,5 @@ if(EXISTS ${WEB_SRC_DIR})
 else()
     message(FATAL_ERROR "${WEB_SRC_DIR} doesn't exist. Please create this directory and add your web files.")
 endif()
+
+spiffs_create_partition_image(caldata ../reset FLASH_IN_PROJECT)

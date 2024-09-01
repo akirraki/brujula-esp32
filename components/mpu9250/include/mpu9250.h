@@ -26,3 +26,6 @@ extern QueueHandle_t xMPU9250Queue;
 extern TaskHandle_t xMPU9250CalTaskHandle;
 extern TaskHandle_t xMPU9250ProcessingTaskHandle;
 extern QueueHandle_t xDisplayQueueA;
+
+extern float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw;
+extern float RateCalibrationAccX, RateCalibrationAccY, RateCalibrationAccZ;

@@ -1,0 +1,7 @@
+wasReset: 1
+Roll: 0.0
+Pitch: 0.0
+Yaw: 0.0
+AccX: 0.0
+AccY: 0.0
+AccZ: 0.0

@@ -24,6 +24,114 @@
 
 #define WEB_MOUNT_POINT "/www"
 #define CSV_MOUNT_POINT "/csvfiles"
+#define CALIB_MOUNT_POINT "/calib"
+
+const char *TAG = "brujula";
+
+typedef struct cal_data
+{
+    int wasReset;
+    float roll;
+    float pitch;
+    float yaw;
+    float accX;
+    float accY;
+    float accZ;
+} calfile_data_t;
+
+calfile_data_t parseFileData(char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    calfile_data_t data = {0}; // Initialize all fields to 0
+    char line[64];
+
+    if (file == NULL)
+    {
+        data.wasReset = -1;
+        return data;
+    }
+
+    while (fgets(line, sizeof(line), file))
+    {
+        char *key = strtok(line, ":");
+        if (key == NULL)
+            continue;
+
+        char *value = strtok(NULL, "\n");
+        if (value == NULL)
+            continue;
+
+        // Remove leading whitespace from value
+        while (*value == ' ')
+            value++;
+
+        if (strcmp(key, "wasReset") == 0)
+        {
+            data.wasReset = atoi(value);
+        }
+        else if (strcmp(key, "Roll") == 0)
+        {
+            data.roll = atof(value);
+        }
+        else if (strcmp(key, "Pitch") == 0)
+        {
+            data.pitch = atof(value);
+        }
+        else if (strcmp(key, "Yaw") == 0)
+        {
+            data.yaw = atof(value);
+        }
+        else if (strcmp(key, "AccX") == 0)
+        {
+            data.accX = atof(value);
+        }
+        else if (strcmp(key, "AccY") == 0)
+        {
+            data.accY = atof(value);
+        }
+        else if (strcmp(key, "AccZ") == 0)
+        {
+            data.accZ = atof(value);
+        }
+    }
+
+    fclose(file);
+    return data;
+}
+
+void xStoreCalFileTask(void *pvParameter)
+{
+    calfile_data_t file_data = {0};
+    for (;;)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        file_data = parseFileData("/calib/reset.txt");
+        if (file_data.wasReset == -1)
+        {
+            taskYIELD();
+            continue;
+        }
+        if (file_data.wasReset == 1) // setear wasReset a 0 despues de calibrar
+        {
+            RateCalibrationRoll = file_data.roll;
+            RateCalibrationPitch = file_data.pitch;
+            RateCalibrationYaw = file_data.yaw;
+            RateCalibrationAccX = file_data.accX;
+            RateCalibrationAccY = file_data.accY;
+            RateCalibrationAccZ = file_data.accZ;
+        }
+        else // wasReset = 0
+        {
+            file_data = parseFileData("/calib/calibration.txt");
+            RateCalibrationRoll = file_data.roll;
+            RateCalibrationPitch = file_data.pitch;
+            RateCalibrationYaw = file_data.yaw;
+            RateCalibrationAccX = file_data.accX;
+            RateCalibrationAccY = file_data.accY;
+            RateCalibrationAccZ = file_data.accZ;
+        }
+    }
+}
 
 static void initialise_mdns(void)
 {
@@ -57,6 +165,7 @@ TaskHandle_t xGPSTaskHandle = NULL;
 // storage
 TaskHandle_t xStoreFileTaskHandle = NULL;
 TaskHandle_t xDeleteAllFilesTaskHandle = NULL;
+TaskHandle_t xStoreCalFileTaskHandle = NULL;
 void xDeleteAllFilesTask(void *pvParameter);
 void xStoreFileTask(void *pvParameter);
 
@@ -90,6 +199,20 @@ void app_main(void)
         .format_if_mount_failed = true};
     ESP_ERROR_CHECK(spiffs_init(&csv_conf));
 
+    // Initialize SPIFFS for CSV files
+    esp_vfs_spiffs_conf_t cal_conf = {
+        .base_path = CALIB_MOUNT_POINT,
+        .partition_label = "caldata",
+        .max_files = 5,
+        .format_if_mount_failed = true};
+    ESP_ERROR_CHECK(spiffs_init(&cal_conf));
+
+    xTaskCreate(xStoreCalFileTask,
+                "store_cakibration_file",
+                1024 * 4,
+                NULL,
+                2,
+                &xStoreCalFileTaskHandle);
     // initialize LCD
     my_diplay = setup_display();
 
@@ -131,21 +254,19 @@ void app_main(void)
     // initialize lvgl input device (5 buttons)
     indev_init();
 
-    xTaskCreate(
-        xDispMeasurementsTask,
-        "disp_measurements",
-        1024 * 8,
-        NULL,
-        1,
-        &xDispMeasurementsTaskHandle);
+    xTaskCreate(xDispMeasurementsTask,
+                "disp_measurements",
+                1024 * 8,
+                NULL,
+                1,
+                &xDispMeasurementsTaskHandle);
     // storage tasks
-    xTaskCreate(
-        xStoreFileTask,
-        "store_a_file",
-        1024 * 4,
-        NULL,
-        3,
-        &xStoreFileTaskHandle);
+    xTaskCreate(xStoreFileTask,
+                "store_a_file",
+                1024 * 4,
+                NULL,
+                3,
+                &xStoreFileTaskHandle);
 
     xTaskCreate(xDeleteAllFilesTask,
                 "deleteFiles",
@@ -153,4 +274,5 @@ void app_main(void)
                 NULL,
                 3,
                 &xDeleteAllFilesTaskHandle);
+    xTaskNotifyGive(xStoreCalFileTaskHandle);
 }

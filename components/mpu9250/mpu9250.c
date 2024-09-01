@@ -2,6 +2,9 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include <stdio.h>
+#include <string.h>
+#include <sys/unistd.h>
 #include <math.h>
 #include "mpu9250.h"
 #include "moving_average.h"
@@ -48,8 +51,8 @@ static float RateRoll, RatePitch, RateYaw; // Declaro las variables del giroscop
 static float AccX, AccY, AccZ;             // Declaro las variables del acelerometro
 static float AngleRoll, AnglePitch;        // Declaro los angulos respecto al eje
 // Declaro las variables de calibracion
-static float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw;
-static float RateCalibrationAccX, RateCalibrationAccY, RateCalibrationAccZ;
+float RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw;
+float RateCalibrationAccX, RateCalibrationAccY, RateCalibrationAccZ;
 static float RateCalibrationMagX, RateCalibrationMagY, RateCalibrationMagZ;
 //-----------------------------------------------------------------------------------------------------------------
 static float A[3][3] = {{1.206608, 0.008575, 0.032039}, {0.008575, 1.415163, 0.105131}, {0.032039, 0.105131, 1.471221}}; // Corrección de hierro dulce y desalineación (fila, columna)
@@ -57,6 +60,49 @@ static float B[3] = {6.993961, 29.406449, 7.491985};                            
 //-----------------------------------------------------------------------------------------------------------------
 
 static const i2c_port_t i2c_master_port = 0;
+
+esp_err_t toggle_wasReset(const char *filename)
+{
+    FILE *file = fopen(filename, "r+");
+    if (file == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file for reading and writing");
+        return ESP_FAIL;
+    }
+
+    char line[12]; // "wasReset: X\n" is 11 characters + null terminator
+    if (fgets(line, sizeof(line), file) == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to read from file");
+        fclose(file);
+        return ESP_FAIL;
+    }
+
+    if (strncmp(line, "wasReset: ", 10) != 0)
+    {
+        ESP_LOGE(TAG, "Unexpected file format");
+        fclose(file);
+        return ESP_FAIL;
+    }
+
+    // Toggle the value
+    char new_value = (line[10] == '0') ? '1' : '0';
+
+    // Go back to the start of the file
+    fseek(file, 10, SEEK_SET);
+
+    // Write the new value
+    if (fputc(new_value, file) == EOF)
+    {
+        ESP_LOGE(TAG, "Failed to write to file");
+        fclose(file);
+        return ESP_FAIL;
+    }
+
+    fclose(file);
+    ESP_LOGI(TAG, "wasReset value toggled to %c", new_value);
+    return ESP_OK;
+}
 
 static void MPU_medidas(void)
 {
@@ -106,6 +152,7 @@ static void MPU_medidas(void)
 void xMPU9250CalTask(void *pvParameter)
 {
     static uint32_t xNotifiedValue = 0x00;
+    FILE *file = NULL;
     for (;;)
     {
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
@@ -130,6 +177,13 @@ void xMPU9250CalTask(void *pvParameter)
                 RateCalibrationAccX /= promedio;
                 RateCalibrationAccY /= promedio;
                 RateCalibrationAccZ = (RateCalibrationAccZ / promedio) - 1;
+
+                file = fopen("/calib/calibration.txt", "w");
+                fprintf(file, "Roll: %-.05f\nPitch: %-.05f\nYaw: %-.05f\nAccX: %-.05f\nAccY: %-.05f\nAccZ: %-.05f\n",
+                        RateCalibrationRoll, RateCalibrationPitch, RateCalibrationYaw, RateCalibrationAccX,
+                        RateCalibrationAccY, RateCalibrationAccZ);
+                fclose(file);
+                toggle_wasReset("/calib/reset.txt");
                 finished_cal = 1;
                 xSemaphoreGive(xI2CMutex);
             }

@@ -215,7 +215,7 @@ void indev_init(void)
     xKeypadQueue = xQueueCreate(32, sizeof(uint32_t));
     xTaskCreate(xSwitchScreenTask,
                 "screensTask",
-                1024,
+                1024 * 8,
                 NULL,
                 4,
                 &xSwTaskHandle);
