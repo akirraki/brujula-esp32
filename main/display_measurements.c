@@ -259,8 +259,11 @@ void xStoreFileTask(void *pvParameter)
     const char *csv_filepath = "/csvfiles";
     const char *brujula_header = "Latitud, Longitud, Altitud, Buzamiento, DB, Fecha, Hora\n";
     uint32_t xNotifiedValue = 0x00;
+    int8_t dataIsValid = 0;
     char filepath[80] = {};
     char buffer[100] = {};
+    DIR *dirp;
+    struct dirent *entry;
     for (;;)
     {
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
@@ -270,6 +273,7 @@ void xStoreFileTask(void *pvParameter)
             xStatus = xQueueReceive(xDisplayQueueA, &brujulaData, pdMS_TO_TICKS(100));
             if (xStatus == pdTRUE)
             {
+                dataIsValid++;
                 if (lvgl_lock(500))
                 {
                     snprintf(buffer, sizeof(buffer), " %.03f°", brujulaData.dir_buzamiento);
@@ -281,6 +285,7 @@ void xStoreFileTask(void *pvParameter)
             }
             else
             {
+                dataIsValid--;
                 if (lvgl_lock(500))
                 {
                     lv_label_set_text(ui_Label1, "error."); // brujula
@@ -292,6 +297,7 @@ void xStoreFileTask(void *pvParameter)
             xStatus = xQueueReceive(xDisplayQueueB, &gpsData, pdMS_TO_TICKS(100));
             if (xStatus == pdTRUE)
             {
+                dataIsValid++;
                 if (lvgl_lock(500))
                 {
                     snprintf(buffer, sizeof(buffer), " %.03f", gpsData.latitude);
@@ -309,6 +315,7 @@ void xStoreFileTask(void *pvParameter)
             }
             else
             {
+                dataIsValid--;
                 if (lvgl_lock(500))
                 {
                     lv_label_set_text(ui_Label3, "error."); // latitud
@@ -323,24 +330,22 @@ void xStoreFileTask(void *pvParameter)
         xTaskNotifyWait(pdFALSE, ULONG_MAX, &xNotifiedValue, portMAX_DELAY);
         if ((xNotifiedValue & 0x07) != 0)
         {
-            if (xStatus == pdTRUE)
+            dirp = opendir(csv_filepath);
+            if (dirp == NULL)
             {
-                DIR *dirp;
-                struct dirent *entry;
-
-                dirp = opendir(csv_filepath);
-                if (dirp == NULL)
-                {
-                    taskYIELD();
+                taskYIELD();
+            }
+            while ((entry = readdir(dirp)) != NULL)
+            {
+                if (entry->d_type == DT_REG)
+                { /* If the entry is a regular file */
+                    file_count++;
                 }
-                while ((entry = readdir(dirp)) != NULL)
-                {
-                    if (entry->d_type == DT_REG)
-                    { /* If the entry is a regular file */
-                        file_count++;
-                    }
-                }
-                closedir(dirp);
+            }
+            closedir(dirp);
+            ESP_LOGI(TAG, "Hay %d archivos guardados.", file_count);
+            if (dataIsValid >= 0)
+            {
                 // write data to.csv file
                 snprintf(filepath, sizeof(filepath), "%s/brujula_data%d.csv", csv_filepath, file_count);
 
@@ -357,15 +362,26 @@ void xStoreFileTask(void *pvParameter)
                     fputs(brujula_header, file);
                 }
 
-                fprintf(file, "%.05f, %.05f, %.05f, %.05f, %.05f, %d/%d/%d, %d:%d:%d\n",
-                        gpsData.longitude, gpsData.latitude, gpsData.altitude, brujulaData.buzamiento,
-                        brujulaData.dir_buzamiento, gpsData.date.day, gpsData.date.month,
-                        gpsData.date.year + YEAR_BASE, gpsData.tim.hour + TIME_ZONE,
-                        gpsData.tim.minute, gpsData.tim.second);
+                if (dataIsValid == 2) // all data is valid
+                {
+                    fprintf(file, "%.05f, %.05f, %.05f, %.05f, %.05f, %d/%d/%d, %d:%d:%d\n",
+                            gpsData.longitude, gpsData.latitude, gpsData.altitude, brujulaData.buzamiento,
+                            brujulaData.dir_buzamiento, gpsData.date.day, gpsData.date.month,
+                            gpsData.date.year + YEAR_BASE, gpsData.tim.hour + TIME_ZONE,
+                            gpsData.tim.minute, gpsData.tim.second);
+                }
+
+                else // gps probably failed
+                {
+                    fprintf(file, "ERROR, ERROR, ERROR, %.05f, %.05f, ERROR, ERROR\n",
+                            brujulaData.buzamiento,
+                            brujulaData.dir_buzamiento);
+                }
                 fclose(file);
-                file_count = 0;
             }
         }
+        file_count = 0;
+        dataIsValid = 0;
     }
 }
 
@@ -382,14 +398,19 @@ void xDeleteAllFilesTask(void *pvParameter)
         if ((xNotifiedValue & 0x0E) != 0)
         {
             dir = opendir(csv_filepath);
-            while ((entry = readdir(dir)) != NULL) // leer readdir() y unlink() sino timeout de 1s
+            if (dir == NULL)
+            {
+                finishedDeletingFiles = 1;
+                continue;
+            }
+            while ((entry = readdir(dir)) != NULL)
             {
                 snprintf(filepath, sizeof(filepath), "%s/%s", csv_filepath, entry->d_name);
                 unlink(filepath);
             }
             closedir(dir);
-            finishedDeletingFiles = 1;
         }
+        finishedDeletingFiles = 1;
     }
 }
 
