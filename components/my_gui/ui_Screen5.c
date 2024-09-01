@@ -12,44 +12,6 @@ void ui_Screen5_screen_init(void)
     lv_obj_set_style_bg_color(ui_Screen5, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Screen5, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Wifi3 = lv_obj_create(ui_Screen5);
-    lv_obj_set_width(ui_Wifi3, 150);
-    lv_obj_set_height(ui_Wifi3, 50);
-    lv_obj_set_x(ui_Wifi3, lv_pct(0));
-    lv_obj_set_y(ui_Wifi3, lv_pct(-25));
-    lv_obj_set_align(ui_Wifi3, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Wifi3, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-
-    ui_Wifi4 = lv_label_create(ui_Wifi3);
-    lv_obj_set_width(ui_Wifi4, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Wifi4, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_y(ui_Wifi4, 0);
-    lv_obj_set_x(ui_Wifi4, lv_pct(20));
-    lv_obj_set_align(ui_Wifi4, LV_ALIGN_LEFT_MID);
-    lv_label_set_text(ui_Wifi4, "Wifi");
-
-    ui_Wifi5 = lv_label_create(ui_Wifi3);
-    lv_obj_set_width(ui_Wifi5, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Wifi5, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_y(ui_Wifi5, 0);
-    lv_obj_set_x(ui_Wifi5, lv_pct(-20));
-    lv_obj_set_align(ui_Wifi5, LV_ALIGN_RIGHT_MID);
-    lv_label_set_text(ui_Wifi5, "ON");
-
-    ui_Borrar_medidas2 = lv_obj_create(ui_Screen5);
-    lv_obj_set_width(ui_Borrar_medidas2, 150);
-    lv_obj_set_height(ui_Borrar_medidas2, 50);
-    lv_obj_set_x(ui_Borrar_medidas2, 0);
-    lv_obj_set_y(ui_Borrar_medidas2, lv_pct(25));
-    lv_obj_set_align(ui_Borrar_medidas2, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Borrar_medidas2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-
-    ui_Borrar_medidas3 = lv_label_create(ui_Borrar_medidas2);
-    lv_obj_set_width(ui_Borrar_medidas3, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Borrar_medidas3, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_Borrar_medidas3, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Borrar_medidas3, "Borrar medidas");
-
     ui_Calibrando = lv_obj_create(ui_Screen5);
     lv_obj_set_width(ui_Calibrando, 192);
     lv_obj_set_height(ui_Calibrando, 160);

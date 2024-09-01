@@ -16,7 +16,7 @@ void ui_Screen3_screen_init(void)
     lv_obj_set_width(ui_Wifi, 150);
     lv_obj_set_height(ui_Wifi, 50);
     lv_obj_set_x(ui_Wifi, lv_pct(0));
-    lv_obj_set_y(ui_Wifi, lv_pct(-25));
+    lv_obj_set_y(ui_Wifi, lv_pct(-30));
     lv_obj_set_align(ui_Wifi, LV_ALIGN_CENTER);
     lv_obj_add_flag(ui_Wifi, LV_OBJ_FLAG_CHECKABLE);     /// Flags
     lv_obj_clear_flag(ui_Wifi, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
@@ -53,6 +53,8 @@ void ui_Screen3_screen_init(void)
     ui_Calibrar = lv_obj_create(ui_Screen3);
     lv_obj_set_width(ui_Calibrar, 150);
     lv_obj_set_height(ui_Calibrar, 50);
+    lv_obj_set_x(ui_Calibrar, 0);
+    lv_obj_set_y(ui_Calibrar, lv_pct(-10));
     lv_obj_set_align(ui_Calibrar, LV_ALIGN_CENTER);
     lv_obj_clear_flag(ui_Calibrar, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_shadow_color(ui_Calibrar, lv_color_hex(0x7B7878), LV_PART_MAIN | LV_STATE_PRESSED);
@@ -74,7 +76,7 @@ void ui_Screen3_screen_init(void)
     lv_obj_set_width(ui_Borrar_medidas, 150);
     lv_obj_set_height(ui_Borrar_medidas, 50);
     lv_obj_set_x(ui_Borrar_medidas, 0);
-    lv_obj_set_y(ui_Borrar_medidas, lv_pct(25));
+    lv_obj_set_y(ui_Borrar_medidas, lv_pct(30));
     lv_obj_set_align(ui_Borrar_medidas, LV_ALIGN_CENTER);
     lv_obj_clear_flag(ui_Borrar_medidas, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
     lv_obj_set_style_shadow_color(ui_Borrar_medidas, lv_color_hex(0x7B7878), LV_PART_MAIN | LV_STATE_PRESSED);
@@ -146,10 +148,33 @@ void ui_Screen3_screen_init(void)
     lv_obj_set_style_bg_color(ui_Bateria5, lv_color_hex(0xFFFFFF), LV_PART_KNOB | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Bateria5, 0, LV_PART_KNOB | LV_STATE_DEFAULT);
 
+    ui_Resetear = lv_obj_create(ui_Screen3);
+    lv_obj_set_width(ui_Resetear, 150);
+    lv_obj_set_height(ui_Resetear, 50);
+    lv_obj_set_x(ui_Resetear, 0);
+    lv_obj_set_y(ui_Resetear, lv_pct(10));
+    lv_obj_set_align(ui_Resetear, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_Resetear, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_shadow_color(ui_Resetear, lv_color_hex(0x7B7878), LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_opa(ui_Resetear, 255, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_width(ui_Resetear, 2, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_spread(ui_Resetear, 3, LV_PART_MAIN | LV_STATE_PRESSED);
+    lv_obj_set_style_shadow_color(ui_Resetear, lv_color_hex(0x7B7878), LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_shadow_opa(ui_Resetear, 255, LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_shadow_width(ui_Resetear, 2, LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_shadow_spread(ui_Resetear, 3, LV_PART_MAIN | LV_STATE_FOCUSED);
+
+    ui_Resetear1 = lv_label_create(ui_Resetear);
+    lv_obj_set_width(ui_Resetear1, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Resetear1, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Resetear1, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_Resetear1, "Resetear");
+
     lv_obj_add_event_cb(ui_Wifi, ui_event_Wifi, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Calibrar, ui_event_Calibrar, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Borrar_medidas, ui_event_Borrar_medidas, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_De3a1, ui_event_De3a1, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_De3a2, ui_event_De3a2, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Resetear, ui_event_Resetear, LV_EVENT_ALL, NULL);
 
 }

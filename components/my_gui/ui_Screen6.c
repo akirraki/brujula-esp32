@@ -12,44 +12,6 @@ void ui_Screen6_screen_init(void)
     lv_obj_set_style_bg_color(ui_Screen6, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_opa(ui_Screen6, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Wifi6 = lv_obj_create(ui_Screen6);
-    lv_obj_set_width(ui_Wifi6, 150);
-    lv_obj_set_height(ui_Wifi6, 50);
-    lv_obj_set_x(ui_Wifi6, lv_pct(0));
-    lv_obj_set_y(ui_Wifi6, lv_pct(-25));
-    lv_obj_set_align(ui_Wifi6, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Wifi6, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-
-    ui_Wifi7 = lv_label_create(ui_Wifi6);
-    lv_obj_set_width(ui_Wifi7, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Wifi7, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_y(ui_Wifi7, 0);
-    lv_obj_set_x(ui_Wifi7, lv_pct(20));
-    lv_obj_set_align(ui_Wifi7, LV_ALIGN_LEFT_MID);
-    lv_label_set_text(ui_Wifi7, "Wifi");
-
-    ui_Wifi8 = lv_label_create(ui_Wifi6);
-    lv_obj_set_width(ui_Wifi8, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Wifi8, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_y(ui_Wifi8, 0);
-    lv_obj_set_x(ui_Wifi8, lv_pct(-20));
-    lv_obj_set_align(ui_Wifi8, LV_ALIGN_RIGHT_MID);
-    lv_label_set_text(ui_Wifi8, "ON");
-
-    ui_Borrar_medidas4 = lv_obj_create(ui_Screen6);
-    lv_obj_set_width(ui_Borrar_medidas4, 150);
-    lv_obj_set_height(ui_Borrar_medidas4, 50);
-    lv_obj_set_x(ui_Borrar_medidas4, 0);
-    lv_obj_set_y(ui_Borrar_medidas4, lv_pct(25));
-    lv_obj_set_align(ui_Borrar_medidas4, LV_ALIGN_CENTER);
-    lv_obj_clear_flag(ui_Borrar_medidas4, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-
-    ui_Borrar_medidas5 = lv_label_create(ui_Borrar_medidas4);
-    lv_obj_set_width(ui_Borrar_medidas5, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Borrar_medidas5, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(ui_Borrar_medidas5, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_Borrar_medidas5, "Borrar medidas");
-
     ui_Borrando = lv_obj_create(ui_Screen6);
     lv_obj_set_width(ui_Borrando, 192);
     lv_obj_set_height(ui_Borrando, 160);
