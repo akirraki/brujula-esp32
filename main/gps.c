@@ -26,6 +26,9 @@ void gps_event_handler(void *event_handler_arg, esp_event_base_t event_base, int
     {
     case GPS_UPDATE:
         gps = (gps_t *)event_data;
+        // basic check for valid statement
+        if ((gps->date.month) > 12)
+            break;
         /* send information parsed from GPS statements */
         xQueueSendToFront(xGPSDataQueue, gps, 0);
         break;
@@ -45,7 +48,7 @@ void xGPSTask(void *pvParameter)
     gps_t gpsData;
     for (;;)
     {
-        status = xQueueReceive(xGPSDataQueue, &gpsData, pdMS_TO_TICKS(1000));
+        status = xQueueReceive(xGPSDataQueue, &gpsData, portMAX_DELAY);
         if (status == pdTRUE)
         {
             xTaskNotifyWait(pdFALSE,
