@@ -61,7 +61,7 @@ static float B[3] = {6.993961, 29.406449, 7.491985};                            
 
 static const i2c_port_t i2c_master_port = 0;
 
-esp_err_t toggle_wasReset(const char *filename)
+static esp_err_t toggle_wasReset(const char *filename)
 {
     FILE *file = fopen(filename, "r+");
     if (file == NULL)

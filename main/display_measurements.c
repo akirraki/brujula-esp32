@@ -12,18 +12,66 @@
 #include <sys/unistd.h>
 #include "dirent.h"
 
+static const char *TAG = "display_measurements";
+
 extern QueueHandle_t xDisplayQueueA;
 extern QueueHandle_t xDisplayQueueB;
 extern TaskHandle_t xDispMeasurementsTaskHandle;
 extern TaskHandle_t xGPSTaskHandle;
 extern TaskHandle_t xStoreFileTaskHandle;
 extern TaskHandle_t xDeleteAllFilesTaskHandle;
+extern TaskHandle_t xStoreCalFileTaskHandle;
+extern TaskHandle_t xResetTaskHandle;
 extern TaskHandle_t xMPU9250CalTaskHandle;
 
 #define YEAR_BASE (2000)
 #define TIME_ZONE (-3) // Buenos Aires
 
 volatile uint8_t finishedDeletingFiles = 0;
+uint8_t loadResetFile = 0;
+
+esp_err_t set_wasReset(const char *filename, const char option)
+{
+    FILE *file = fopen(filename, "r+");
+    if (file == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to open file for reading and writing");
+        return ESP_FAIL;
+    }
+
+    char line[12]; // "wasReset: X\n" is 11 characters + null terminator
+    if (fgets(line, sizeof(line), file) == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to read from file");
+        fclose(file);
+        return ESP_FAIL;
+    }
+
+    if (strncmp(line, "wasReset: ", 10) != 0)
+    {
+        ESP_LOGE(TAG, "Unexpected file format");
+        fclose(file);
+        return ESP_FAIL;
+    }
+
+    // Toggle the value
+    char new_value = option;
+
+    // Go back to the start of the file
+    fseek(file, 10, SEEK_SET);
+
+    // Write the new value
+    if (fputc(new_value, file) == EOF)
+    {
+        ESP_LOGE(TAG, "Failed to write to file");
+        fclose(file);
+        return ESP_FAIL;
+    }
+
+    fclose(file);
+    ESP_LOGI(TAG, "wasReset value toggled to %c", new_value);
+    return ESP_OK;
+}
 
 void xDispMeasurementsTask(void *pvParameter);
 
@@ -46,6 +94,7 @@ void xDispMeasurementsTask(void *pvParameter)
                 finished_cal = 0;
                 lv_group_add_obj(my_group, ui_Wifi);
                 lv_group_add_obj(my_group, ui_Calibrar);
+                lv_group_add_obj(my_group, ui_Resetear);
                 lv_group_add_obj(my_group, ui_Borrar_medidas);
                 lv_event_send(ui_Salir1, LV_EVENT_CLICKED, NULL);
                 lvgl_unlock();
@@ -58,8 +107,22 @@ void xDispMeasurementsTask(void *pvParameter)
                 finishedDeletingFiles = 0;
                 lv_group_add_obj(my_group, ui_Wifi);
                 lv_group_add_obj(my_group, ui_Calibrar);
+                lv_group_add_obj(my_group, ui_Resetear);
                 lv_group_add_obj(my_group, ui_Borrar_medidas);
                 lv_event_send(ui_Salir2, LV_EVENT_CLICKED, NULL);
+                lvgl_unlock();
+            }
+        }
+        if (loadResetFile == 1)
+        {
+            if (lvgl_lock(-1))
+            {
+                loadResetFile = 0;
+                lv_group_add_obj(my_group, ui_Wifi);
+                lv_group_add_obj(my_group, ui_Calibrar);
+                lv_group_add_obj(my_group, ui_Resetear);
+                lv_group_add_obj(my_group, ui_Borrar_medidas);
+                lv_event_send(ui_Salir3, LV_EVENT_CLICKED, NULL);
                 lvgl_unlock();
             }
         }
@@ -177,6 +240,16 @@ void SIPIFUNCION(lv_event_t *e)
     }
 }
 
+void RESETEARON(lv_event_t *e)
+{
+    if (lvgl_lock(500))
+    {
+        xTaskNotifyGive(xResetTaskHandle);
+        lv_group_remove_all_objs(my_group);
+        lvgl_unlock();
+    }
+}
+
 void xStoreFileTask(void *pvParameter)
 {
     gps_t gpsData;
@@ -185,7 +258,6 @@ void xStoreFileTask(void *pvParameter)
     static int file_count = 0;
     const char *csv_filepath = "/csvfiles";
     const char *brujula_header = "Latitud, Longitud, Altitud, Buzamiento, DB, Fecha, Hora\n";
-    const char *dummy_gps_data[5] = {"error.", "error.", "error.", "error.", "error."};
     uint32_t xNotifiedValue = 0x00;
     char filepath[80] = {};
     char buffer[100] = {};
@@ -318,5 +390,16 @@ void xDeleteAllFilesTask(void *pvParameter)
             closedir(dir);
             finishedDeletingFiles = 1;
         }
+    }
+}
+
+void xResetTask(void *pvParameter)
+{
+    for (;;)
+    {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        set_wasReset("/calib/reset.txt", '1');
+        loadResetFile = 1;
+        xTaskNotifyGive(xStoreCalFileTaskHandle);
     }
 }

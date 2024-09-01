@@ -15,7 +15,7 @@
 lv_group_t *my_group;
 lv_indev_drv_t indev_drv;
 
-#define SCR3_OBJ_AMOUNT 3
+#define SCR3_OBJ_AMOUNT 4
 
 static lv_obj_t *scr3_objects[SCR3_OBJ_AMOUNT];
 
@@ -226,7 +226,8 @@ void indev_init(void)
     // muy mala solucion:
     scr3_objects[0] = ui_Wifi;
     scr3_objects[1] = ui_Calibrar;
-    scr3_objects[2] = ui_Borrar_medidas;
+    scr3_objects[2] = ui_Resetear;
+    scr3_objects[3] = ui_Borrar_medidas;
 
     button_handle_t enter_key = my_button_init(PIN_BOTON_ENTER, ENTER, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);
     my_button_init(PIN_BOTON_ARRIBA, ARRIBA, BUTTON_SINGLE_CLICK, button_clicked_event_cb1);

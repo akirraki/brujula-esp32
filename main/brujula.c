@@ -166,8 +166,10 @@ TaskHandle_t xGPSTaskHandle = NULL;
 TaskHandle_t xStoreFileTaskHandle = NULL;
 TaskHandle_t xDeleteAllFilesTaskHandle = NULL;
 TaskHandle_t xStoreCalFileTaskHandle = NULL;
+TaskHandle_t xResetTaskHandle = NULL;
 void xDeleteAllFilesTask(void *pvParameter);
 void xStoreFileTask(void *pvParameter);
+void xResetTask(void *pvParameter);
 
 void app_main(void)
 {
@@ -274,5 +276,13 @@ void app_main(void)
                 NULL,
                 3,
                 &xDeleteAllFilesTaskHandle);
+
+    xTaskCreate(xResetTask,
+                "deleteFiles",
+                1024 * 4,
+                NULL,
+                3,
+                &xResetTaskHandle);
+
     xTaskNotifyGive(xStoreCalFileTaskHandle);
 }

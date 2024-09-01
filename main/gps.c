@@ -27,7 +27,7 @@ void gps_event_handler(void *event_handler_arg, esp_event_base_t event_base, int
     case GPS_UPDATE:
         gps = (gps_t *)event_data;
         // basic check for valid statement
-        if ((gps->date.month) > 12)
+        if ((gps->date.month) > 12 || (gps->date.day) > 31 || (gps->tim.hour) > 23)
             break;
         /* send information parsed from GPS statements */
         xQueueSendToFront(xGPSDataQueue, gps, 0);
