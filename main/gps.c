@@ -1,15 +1,6 @@
-#include "nmea_parser.h"
-#include "flash-storage.h"
-#include "esp_log.h"
+#include "tasks.h"
 #include <stdio.h>
 #include <string.h>
-#include <sys/unistd.h>
-#include <sys/stat.h>
-
-extern QueueHandle_t xGPSDataQueue;
-extern QueueHandle_t xDisplayQueueB;
-extern TaskHandle_t xGPSTaskHandle;
-extern TaskHandle_t xDispMeasurementsTaskHandle;
 
 /**
  * @brief GPS Event Handler

@@ -6,9 +6,11 @@ idf_component_register(SRCS ui_Screen1.c
                             ui_Screen6.c
                             ui_Screen7.c
                             ui.c
+                            ui_callbacks.c
                             ui_comp_hook.c
                             ui_helpers.c
                             ui_img_pngwing2_com_png.c
                             ui_img_1871344563.c
-                    INCLUDE_DIRS "include"
-                    REQUIRES lvgl)
+                    INCLUDE_DIRS "include" "../../main"
+                    REQUIRES lvgl ili9341-lvgl-solution
+                    PRIV_REQUIRES esp_wifi)
